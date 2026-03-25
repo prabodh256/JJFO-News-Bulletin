@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """
 JJFO News Bulletin - Real-time Web Scraper
+Scrapes from 16 news sources (no API delays)
+CSV-based storage (completely free)
 """
 
 import os
@@ -11,55 +13,24 @@ from datetime import datetime
 from collections import defaultdict
 from difflib import SequenceMatcher
 from bs4 import BeautifulSoup
-from resend import Resend
 import time
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 # Configuration
 RESEND_API_KEY = os.getenv('RESEND_API_KEY', '')
+RECIPIENT_EMAIL = 'investment@jjfo.com'
+COMPANIES_FILE = 'companies.csv'
+RECIPIENTS_FILE = 'recipients.csv'
+DISPATCH_LOG_FILE = 'dispatch_log.csv'
+
+# Verify API key
 if not RESEND_API_KEY:
-    print("ERROR: RESEND_API_KEY environment variable not set!")
-    print("Available env vars:", list(os.environ.keys()))
+    print("ERROR: RESEND_API_KEY not set!")
     exit(1)
 
-print(f"Using API Key: {RESEND_API_KEY[:10]}...")
-
-try:
-    resend = Resend(api_key=RESEND_API_KEY)
-except Exception as e:
-    print(f"ERROR initializing Resend: {e}")
-    exit(1)
-
-RECIPIENT_EMAIL = 'investment@jjfo.com'
-COMPANIES_FILE = 'companies.csv'
-RECIPIENTS_FILE = 'recipients.csv'
-DISPATCH_LOG_FILE = 'dispatch_log.csv'
-
-#!/usr/bin/env python3
-"""
-JJFO News Bulletin - Real-time Web Scraper
-Scrapes from 15+ news sources (no API delays)
-CSV-based storage (completely free)
-"""
-
-import os
-import csv
-import requests
-import feedparser
-from datetime import datetime, timedelta
-from collections import defaultdict
-from difflib import SequenceMatcher
-from bs4 import BeautifulSoup
-from resend import Resend
-import time
-
-# Configuration
-RESEND_API_KEY = os.getenv('RESEND_API_KEY')
-RECIPIENT_EMAIL = 'investment@jjfo.com'
-COMPANIES_FILE = 'companies.csv'
-RECIPIENTS_FILE = 'recipients.csv'
-DISPATCH_LOG_FILE = 'dispatch_log.csv'
-
-resend = Resend(RESEND_API_KEY)
+print(f"✓ Using Resend API Key: {RESEND_API_KEY[:20]}...")
 
 # RSS Feed Sources (Real-time)
 RSS_FEEDS = {
@@ -77,7 +48,7 @@ RSS_FEEDS = {
     'Economic Times': 'https://economictimes.indiatimes.com/rssfeedstopics.cms?feedtype=json&feed_id=1715249553',
 }
 
-# Direct Scraping Sources (for sources without RSS feeds)
+# Direct Scraping Sources
 SOURCES = {
     'Inc42 Plus': 'https://inc42plus.com/',
     'Moneycontrol Startups': 'https://www.moneycontrol.com/news/startups/',
@@ -126,14 +97,13 @@ def scrape_rss_feeds(companies):
             print(f"Scraping {source_name}...")
             feed = feedparser.parse(feed_url)
             
-            for entry in feed.entries[:30]:  # Get last 30 articles per source
+            for entry in feed.entries[:30]:
                 headline = entry.get('title', '')
                 link = entry.get('link', '')
                 
                 if not headline or not link:
                     continue
                 
-                # Check if article mentions any company or competitor
                 for company_name in companies.keys():
                     if company_name.lower() in headline.lower():
                         news_items[company_name].append({
@@ -144,7 +114,6 @@ def scrape_rss_feeds(companies):
                         })
                         break
                 
-                # Also check competitors
                 for company_name, data in companies.items():
                     for competitor in data.get('competitors', []):
                         if competitor.lower() in headline.lower() and company_name not in news_items:
@@ -159,7 +128,7 @@ def scrape_rss_feeds(companies):
         except Exception as e:
             print(f"Error scraping {source_name}: {e}")
         
-        time.sleep(1)  # Rate limiting
+        time.sleep(1)
     
     return news_items
 
@@ -174,7 +143,6 @@ def scrape_direct_sources(companies):
             response = requests.get(source_url, headers=headers, timeout=10)
             soup = BeautifulSoup(response.content, 'html.parser')
             
-            # Find all article links
             articles = soup.find_all('a', limit=50)
             
             for article in articles:
@@ -184,13 +152,11 @@ def scrape_direct_sources(companies):
                 if not headline or not link or len(headline) < 10:
                     continue
                 
-                # Make relative URLs absolute
                 if link.startswith('/'):
                     link = source_url.rstrip('/') + link
                 elif not link.startswith('http'):
                     link = source_url.rstrip('/') + '/' + link
                 
-                # Check if article mentions any company
                 for company_name in companies.keys():
                     if company_name.lower() in headline.lower():
                         news_items[company_name].append({
@@ -203,7 +169,7 @@ def scrape_direct_sources(companies):
         except Exception as e:
             print(f"Error scraping {source_name}: {e}")
         
-        time.sleep(2)  # Rate limiting
+        time.sleep(2)
     
     return news_items
 
@@ -300,29 +266,40 @@ def format_email(categorized):
     
     return body, total_articles
 
-def send_email(body, recipients):
-    """Send email via Resend"""
+def send_email_via_resend(body, recipients):
+    """Send email via Resend API using HTTP request"""
     try:
+        import json
+        
         for recipient in recipients:
-            response = resend.emails.send(
-                {
-                    "from": "JJFO News <noreply@jjfo.in>",
-                    "to": recipient,
-                    "subject": f"JJFO News Bulletin - {datetime.now().strftime('%B %d, %Y')}",
-                    "html": f"<pre>{body}</pre>"
-                }
-            )
-            print(f"Email sent to {recipient}: {response}")
+            url = "https://api.resend.com/emails"
+            
+            headers = {
+                "Authorization": f"Bearer {RESEND_API_KEY}",
+                "Content-Type": "application/json"
+            }
+            
+            payload = {
+                "from": "JJFO News <noreply@jjfo.in>",
+                "to": recipient,
+                "subject": f"JJFO News Bulletin - {datetime.now().strftime('%B %d, %Y')}",
+                "html": f"<pre style='font-family: Arial, sans-serif; white-space: pre-wrap;'>{body}</pre>"
+            }
+            
+            response = requests.post(url, json=payload, headers=headers)
+            
+            if response.status_code == 200:
+                print(f"✓ Email sent to {recipient}")
+            else:
+                print(f"✗ Failed to send to {recipient}: {response.status_code}")
+                print(f"Response: {response.text}")
+                return False
+        
         return True
     except Exception as e:
         print(f"Error sending email: {e}")
         import traceback
         traceback.print_exc()
-        return False
-
-        return True
-    except Exception as e:
-        print(f"Error sending email: {e}")
         return False
 
 def log_dispatch(status, count):
@@ -365,7 +342,7 @@ def main():
         body, article_count = format_email(categorized)
         
         print(f"Sending email to {len(recipients)} recipient(s)...")
-        if send_email(body, recipients):
+        if send_email_via_resend(body, recipients):
             log_dispatch('Success', article_count)
             print("✓ Email sent successfully")
         else:
@@ -374,6 +351,8 @@ def main():
     
     except Exception as e:
         print(f"Fatal error: {e}")
+        import traceback
+        traceback.print_exc()
         log_dispatch('Error', 0)
 
 if __name__ == '__main__':
