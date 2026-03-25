@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 JJFO News Bulletin - Real-time Web Scraper
-Scrapes from 16 news sources (no API delays)
+Scrapes from 16 news sources (past 2 days)
+Shows portfolio company name for competitor news
 CSV-based storage (completely free)
 """
 
@@ -9,7 +10,7 @@ import os
 import csv
 import requests
 import feedparser
-from datetime import datetime
+from datetime import datetime, timedelta
 from collections import defaultdict
 from difflib import SequenceMatcher
 from bs4 import BeautifulSoup
@@ -88,8 +89,28 @@ def load_recipients():
         recipients = [RECIPIENT_EMAIL]
     return recipients if recipients else [RECIPIENT_EMAIL]
 
+def is_recent(published_date_str):
+    """Check if article is from past 2 days"""
+    try:
+        # Try parsing ISO format
+        try:
+            published = datetime.fromisoformat(published_date_str.replace('Z', '+00:00'))
+        except:
+            # Try parsing RSS date format
+            from email.utils import parsedate_to_datetime
+            published = parsedate_to_datetime(published_date_str)
+        
+        # Get current time and 2 days ago
+        now = datetime.now(published.tzinfo) if published.tzinfo else datetime.now()
+        two_days_ago = now - timedelta(days=2)
+        
+        return published >= two_days_ago
+    except:
+        # If we can't parse the date, include it anyway
+        return True
+
 def scrape_rss_feeds(companies):
-    """Scrape RSS feeds from all sources"""
+    """Scrape RSS feeds from all sources (past 2 days)"""
     news_items = defaultdict(list)
     
     for source_name, feed_url in RSS_FEEDS.items():
@@ -97,31 +118,42 @@ def scrape_rss_feeds(companies):
             print(f"Scraping {source_name}...")
             feed = feedparser.parse(feed_url)
             
-            for entry in feed.entries[:30]:
+            for entry in feed.entries[:50]:  # Get more entries to ensure 2-day coverage
                 headline = entry.get('title', '')
                 link = entry.get('link', '')
+                published = entry.get('published', datetime.now().isoformat())
                 
                 if not headline or not link:
                     continue
                 
+                # Check if article is from past 2 days
+                if not is_recent(published):
+                    continue
+                
+                # Check portfolio companies
                 for company_name in companies.keys():
                     if company_name.lower() in headline.lower():
                         news_items[company_name].append({
                             'headline': headline,
                             'url': link,
                             'source': source_name,
-                            'published': entry.get('published', datetime.now().isoformat()),
+                            'published': published,
+                            'portfolio_company': company_name,
+                            'is_competitor': False
                         })
                         break
                 
+                # Check competitors
                 for company_name, data in companies.items():
                     for competitor in data.get('competitors', []):
-                        if competitor.lower() in headline.lower() and company_name not in news_items:
+                        if competitor.lower() in headline.lower():
                             news_items[company_name].append({
                                 'headline': headline,
                                 'url': link,
                                 'source': source_name,
-                                'published': entry.get('published', datetime.now().isoformat()),
+                                'published': published,
+                                'portfolio_company': company_name,
+                                'competitor_name': competitor,
                                 'is_competitor': True
                             })
                             break
@@ -133,7 +165,7 @@ def scrape_rss_feeds(companies):
     return news_items
 
 def scrape_direct_sources(companies):
-    """Scrape news directly from sources without RSS feeds"""
+    """Scrape news directly from sources without RSS feeds (past 2 days)"""
     news_items = defaultdict(list)
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
     
@@ -143,7 +175,7 @@ def scrape_direct_sources(companies):
             response = requests.get(source_url, headers=headers, timeout=10)
             soup = BeautifulSoup(response.content, 'html.parser')
             
-            articles = soup.find_all('a', limit=50)
+            articles = soup.find_all('a', limit=100)
             
             for article in articles:
                 headline = article.get_text(strip=True)
@@ -157,6 +189,7 @@ def scrape_direct_sources(companies):
                 elif not link.startswith('http'):
                     link = source_url.rstrip('/') + '/' + link
                 
+                # Check portfolio companies
                 for company_name in companies.keys():
                     if company_name.lower() in headline.lower():
                         news_items[company_name].append({
@@ -164,8 +197,25 @@ def scrape_direct_sources(companies):
                             'url': link,
                             'source': source_name,
                             'published': datetime.now().isoformat(),
+                            'portfolio_company': company_name,
+                            'is_competitor': False
                         })
                         break
+                
+                # Check competitors
+                for company_name, data in companies.items():
+                    for competitor in data.get('competitors', []):
+                        if competitor.lower() in headline.lower():
+                            news_items[company_name].append({
+                                'headline': headline,
+                                'url': link,
+                                'source': source_name,
+                                'published': datetime.now().isoformat(),
+                                'portfolio_company': company_name,
+                                'competitor_name': competitor,
+                                'is_competitor': True
+                            })
+                            break
         except Exception as e:
             print(f"Error scraping {source_name}: {e}")
         
@@ -242,8 +292,20 @@ def deduplicate_news(news_list, threshold=0.75):
     
     return unique
 
+def format_headline_with_company(news):
+    """Format headline with portfolio company name if it's a competitor article"""
+    headline = news['headline']
+    
+    if news.get('is_competitor'):
+        portfolio_company = news.get('portfolio_company', '')
+        competitor_name = news.get('competitor_name', '')
+        # Format: [Portfolio Company] Competitor News
+        return f"[{portfolio_company}] {headline}"
+    
+    return headline
+
 def format_email(categorized):
-    """Format email body"""
+    """Format email body with portfolio company names for competitor news"""
     body = "Your daily curated news digest from India's most promising startups.\nStay ahead with the latest funding, M&A, and sector updates.\n\n"
     
     sections = [
@@ -261,7 +323,8 @@ def format_email(categorized):
         if news:
             body += f"\n{title}\n" + "-" * 40 + "\n"
             for item in news[:5]:
-                body += f"• {item['headline']}\n  {item['url']}\n\n"
+                formatted_headline = format_headline_with_company(item)
+                body += f"• {formatted_headline}\n  {item['url']}\n\n"
                 total_articles += 1
     
     return body, total_articles
@@ -280,7 +343,7 @@ def send_email_via_resend(body, recipients):
             }
             
             payload = {
-                "from": "JJFO News <noreply@jjfo.in>",
+                "from": "JJFO News <onboarding@resend.dev>",
                 "to": recipient,
                 "subject": f"JJFO News Bulletin - {datetime.now().strftime('%B %d, %Y')}",
                 "html": f"<pre style='font-family: Arial, sans-serif; white-space: pre-wrap;'>{body}</pre>"
@@ -314,6 +377,7 @@ def log_dispatch(status, count):
 def main():
     try:
         print("Starting JJFO News Bulletin...")
+        print(f"Scraping news from past 2 days...")
         
         companies = load_companies()
         recipients = load_recipients()
