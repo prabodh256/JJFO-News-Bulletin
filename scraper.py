@@ -304,12 +304,22 @@ def send_email(body, recipients):
     """Send email via Resend"""
     try:
         for recipient in recipients:
-            email = resend.emails.send({
-                "from": "JJFO News <noreply@jjfo.in>",
-                "to": recipient,
-                "subject": f"JJFO News Bulletin - {datetime.now().strftime('%B %d, %Y')}",
-                "html": f"<pre>{body}</pre>"
-            })
+            response = resend.emails.send(
+                {
+                    "from": "JJFO News <noreply@jjfo.in>",
+                    "to": recipient,
+                    "subject": f"JJFO News Bulletin - {datetime.now().strftime('%B %d, %Y')}",
+                    "html": f"<pre>{body}</pre>"
+                }
+            )
+            print(f"Email sent to {recipient}: {response}")
+        return True
+    except Exception as e:
+        print(f"Error sending email: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
         return True
     except Exception as e:
         print(f"Error sending email: {e}")
