@@ -1,6 +1,42 @@
 #!/usr/bin/env python3
 """
 JJFO News Bulletin - Real-time Web Scraper
+"""
+
+import os
+import csv
+import requests
+import feedparser
+from datetime import datetime
+from collections import defaultdict
+from difflib import SequenceMatcher
+from bs4 import BeautifulSoup
+from resend import Resend
+import time
+
+# Configuration
+RESEND_API_KEY = os.getenv('RESEND_API_KEY', '')
+if not RESEND_API_KEY:
+    print("ERROR: RESEND_API_KEY environment variable not set!")
+    print("Available env vars:", list(os.environ.keys()))
+    exit(1)
+
+print(f"Using API Key: {RESEND_API_KEY[:10]}...")
+
+try:
+    resend = Resend(api_key=RESEND_API_KEY)
+except Exception as e:
+    print(f"ERROR initializing Resend: {e}")
+    exit(1)
+
+RECIPIENT_EMAIL = 'investment@jjfo.com'
+COMPANIES_FILE = 'companies.csv'
+RECIPIENTS_FILE = 'recipients.csv'
+DISPATCH_LOG_FILE = 'dispatch_log.csv'
+
+#!/usr/bin/env python3
+"""
+JJFO News Bulletin - Real-time Web Scraper
 Scrapes from 15+ news sources (no API delays)
 CSV-based storage (completely free)
 """
