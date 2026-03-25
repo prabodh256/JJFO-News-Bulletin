@@ -343,7 +343,7 @@ def send_email_via_resend(body, recipients):
             }
             
             payload = {
-                "from": "JJFO News <onboarding@resend.dev>",
+                "from": "JJFO News <noreply@jjfo.in>",
                 "to": recipient,
                 "subject": f"JJFO News Bulletin - {datetime.now().strftime('%B %d, %Y')}",
                 "html": f"<pre style='font-family: Arial, sans-serif; white-space: pre-wrap;'>{body}</pre>"
