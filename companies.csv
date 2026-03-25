@@ -1,14 +1,14 @@
 Company Name,Sector,Competitors
-Agnikul,SpaceTech,Skyroot Aerospace, Relativity Space, Axiom Space
+Agnikul,SpaceTech,Skyroot Aerospace, Relativity Space, Axiom Space, SpaceX
 GalaxEye,SpaceTech,Satellogic, Capella Space, Maxar Technologies
-Zouk,FinTech,Razorpay, Instamojo, PayU
-Orbit Space,SpaceTech,Skyroot Aerospace, Agnikul, Blue Origin
-EPlane,Mobility,Joby Aviation, Lilium, Archer Aviation
+Zouk,Consumer,Miraggio, Lavie, Baggit
+Orbit Space,SpaceTech,Skyroot Aerospace, Agnikul, Blue Origin, Bellatrix Aerospace
+EPlane,Mobility,Joby Aviation, Lilium, Archer Aviation, Sarla Aviation
 Immunito AI,HealthTech,Tempus AI, Flatiron Health, Guardant Health
-PlayShifu,EdTech,Byju's, Unacademy, Vedantu
-Custiv,FinTech,Razorpay, Instamojo, Stripe
+PlayShifu,EdTech,Miko AI
+Custiv,B2B,Zetwerk
 Dr. Paws,PetCare,PetCurious, Heads Up for Tails, DogSpot
-Arata,E-commerce,Nykaa, Unilever, Himalaya
+Arata,Consumer,MOXIE, Honasa
 AsliPundit,Media,NewsBytes, Inshorts, The Ken
 Asset Vantage,FinTech,Groww, Kuvera, Moneycontrol
 AssureKit,InsurTech,Acko, Digit Insurance, Go Digit
@@ -23,7 +23,6 @@ Dunzo,Logistics,Blinkit, Zepto, Instamart
 EpayLater,FinTech,CRED, Slice, LazyPay
 Firecompass,Cybersecurity,Fortinet, Palo Alto Networks, CrowdStrike
 Furlenco,Furniture,Urban Ladder, Pepperfry, Godrej Interio
-Galaxeye,SpaceTech,Satellogic, Capella Space, Maxar Technologies
 Genius Learning,EdTech,Byju's, Unacademy, Vedantu
 GigForce,HR Tech,Workday, ADP, SAP SuccessFactors
 Goldi Solar,GreenTech,Waaree Energies, Adani Green, Tata Power
