@@ -329,13 +329,9 @@ def dedup(articles):
     return unique
 
 # ── Format Email ──────────────────────────────────────────────────────────────
-def format_email(cats):
+def format_email_html(cats):
+    """Build a fully HTML email where each headline is a clickable hyperlink."""
     today = datetime.now().strftime('%B %d, %Y')
-    lines = [
-        f"JJFO News Bulletin — {today}", "",
-        "Your daily curated intelligence from India's most promising startups.",
-        "Stay ahead with the latest funding, M&A, and sector developments.", "",
-    ]
     sections = [
         ('FUNDING — PORTFOLIO COMPANIES', 'port_funding'),
         ('FUNDING — COMPETITORS',         'comp_funding'),
@@ -344,32 +340,79 @@ def format_email(cats):
         ('REGULATORY / SECTOR NEWS',      'sector'),
         ('OTHER NEWS',                    'other'),
     ]
+
+    body_parts = []
     total = 0
     for title, key in sections:
         articles = dedup(cats.get(key, []))
         if not articles:
             continue
-        lines += [f"\n{'─'*55}", title, '─'*55]
+        body_parts.append(
+            f"<h3 style='margin:28px 0 8px;color:#1a1a2e;font-size:13px;"
+            f"letter-spacing:1px;text-transform:uppercase;border-bottom:2px solid #e8e8e8;"
+            f"padding-bottom:6px;'>{title}</h3>"
+            f"<ul style='margin:0;padding-left:18px;'>"
+        )
         for a in articles[:12]:
-            label = (f"[{a['portfolio']} ← {a['competitor']}]"
-                     if a['is_comp'] else f"[{a['portfolio']}]")
-            lines.append(f"\n• {label} {a['headline']}")
-            lines.append(f"  {a['url']}")
+            label = (f"<span style='color:#888;font-size:12px;'>"
+                     f"{a['portfolio']} &larr; {a['competitor']}</span>"
+                     if a['is_comp']
+                     else f"<span style='color:#888;font-size:12px;'>{a['portfolio']}</span>")
+            safe_url  = a['url'].replace('&', '&amp;')
+            safe_head = a['headline'].replace('<', '&lt;').replace('>', '&gt;')
+            body_parts.append(
+                f"<li style='margin-bottom:10px;'>"
+                f"{label} "
+                f"<a href='{safe_url}' style='color:#0057b7;text-decoration:none;font-weight:500;'"
+                f" target='_blank'>{safe_head}</a>"
+                f"</li>"
+            )
             total += 1
-    lines.append(f"\n\n{'─'*55}")
-    lines.append(f"JJFO Intelligence Engine | {today} | {total} articles")
-    return "\n".join(lines), total
+        body_parts.append("</ul>")
+
+    sections_html = "\n".join(body_parts)
+
+    html = f"""
+<html>
+<body style='margin:0;padding:0;background:#f0f2f5;'>
+<div style='max-width:680px;margin:30px auto;background:#ffffff;
+            border-radius:10px;overflow:hidden;
+            font-family:Arial,Helvetica,sans-serif;
+            box-shadow:0 2px 8px rgba(0,0,0,0.08);'>
+
+  <!-- Header -->
+  <div style='background:#1a1a2e;padding:28px 32px;'>
+    <div style='font-size:22px;font-weight:700;color:#ffffff;letter-spacing:0.5px;'>
+      JJFO News Bulletin
+    </div>
+    <div style='font-size:13px;color:#a0a8c0;margin-top:4px;'>{today}</div>
+  </div>
+
+  <!-- Intro -->
+  <div style='padding:20px 32px 8px;font-size:14px;color:#444;line-height:1.7;
+              border-bottom:1px solid #f0f0f0;'>
+    Your daily curated intelligence from India&rsquo;s most promising startups.
+    Stay ahead with the latest funding, M&amp;A, and sector developments.
+  </div>
+
+  <!-- Articles -->
+  <div style='padding:16px 32px 24px;font-size:14px;color:#333;line-height:1.8;'>
+    {sections_html}
+  </div>
+
+  <!-- Footer -->
+  <div style='background:#f8f8f8;padding:16px 32px;font-size:12px;color:#999;
+              border-top:1px solid #e8e8e8;text-align:center;'>
+    JJFO Intelligence Engine &bull; {today} &bull; {total} articles
+  </div>
+
+</div>
+</body>
+</html>"""
+    return html, total
 
 # ── Send Email ────────────────────────────────────────────────────────────────
-def send_email(body, recipients):
-    html = (
-        "<html><body style='background:#f4f4f4;padding:20px;'>"
-        "<div style='max-width:680px;margin:auto;background:#fff;padding:30px;"
-        "border-radius:8px;font-family:Arial,sans-serif;font-size:14px;line-height:1.8;'>"
-        "<pre style='white-space:pre-wrap;font-family:Arial,sans-serif;font-size:14px;'>"
-        + body +
-        "</pre></div></body></html>"
-    )
+def send_email(html, recipients):
     success = True
     for to in recipients:
         r = requests.post(
@@ -381,7 +424,7 @@ def send_email(body, recipients):
             json={
                 "from":    "JJFO News <noreply@jjfo.in>",
                 "to":      to,
-                "subject": f"JJFO News Bulletin — {datetime.now().strftime('%B %d, %Y')}",
+                "subject": f"JJFO News Bulletin \u2014 {datetime.now().strftime('%B %d, %Y')}",
                 "html":    html
             },
             timeout=15
@@ -432,11 +475,11 @@ def main():
 
     print("\n── Categorising & Formatting ─────────────────────────")
     cats = categorise(all_matched)
-    body, total = format_email(cats)
+    html, total = format_email_html(cats)
     print(f"✓ {total} articles after deduplication")
 
     print("\n── Sending Email ─────────────────────────────────────")
-    if send_email(body, recipients):
+    if send_email(html, recipients):
         log_dispatch('Success', total)
         print(f"\n✓ SUCCESS — {total} articles dispatched")
     else:
