@@ -1,12 +1,7 @@
 #!/usr/bin/env python3
 """
-JJFO News Bulletin v4 - Comprehensive News Scraper
-- Google News API integration
-- Partial name matching (Agnikul matches Agnikul Cosmos)
-- Multiple free news APIs (GNews, NewsAPI fallback)
-- Direct RSS + web scraping
-- Google Search-like coverage
-- Past 48 hours
+JJFO News Bulletin - CORRECTED Scraper
+Smart matching logic to avoid false positives
 """
 
 import os
@@ -18,9 +13,7 @@ from collections import defaultdict
 from difflib import SequenceMatcher
 from bs4 import BeautifulSoup
 import time
-import json
 from email.utils import parsedate_to_datetime
-import urllib.parse
 
 # Configuration
 RESEND_API_KEY = os.getenv('RESEND_API_KEY', '')
@@ -69,7 +62,7 @@ def load_companies():
                 if name:
                     companies[name] = {
                         'sector': row.get('Sector', ''),
-                        'competitors': [c.strip() for c in row.get('Competitors', '').split(',') if c.strip()]
+                        'competitors': [c.strip() for c in row.get('Competitors', '').split(',') if c.strip() and c.strip() != '-' and c.strip() != 'N/A']
                     }
     except FileNotFoundError:
         print(f"Warning: {COMPANIES_FILE} not found")
@@ -120,171 +113,66 @@ def is_within_48_hours(published_date_str):
     except:
         return True
 
-def find_matching_company(headline, companies):
-    """Find matching company using partial name matching"""
+def is_portfolio_company_main_subject(headline, company_name):
+    """
+    Check if portfolio company is the MAIN subject of the headline
+    NOT just mentioned somewhere in the text
+    """
     headline_lower = headline.lower()
+    company_lower = company_name.lower()
     
-    # First try exact matches
-    for company_name in companies.keys():
-        if company_name.lower() in headline_lower:
-            return company_name, False
+    # Rule 1: Company name at the start of headline
+    if headline_lower.startswith(company_lower):
+        return True
     
-    # Then try partial matches (e.g., "Agnikul" matches "Agnikul Cosmos")
-    for company_name in companies.keys():
-        words = company_name.lower().split()
-        # Match if first word or significant part of company name is in headline
-        for word in words:
-            if len(word) > 3 and word in headline_lower:
-                return company_name, False
+    # Rule 2: Company name in first 5 words AND followed by action verb
+    words = headline_lower.split()
+    if len(words) > 0 and company_lower in words[:5]:
+        # Check if followed by action verbs
+        action_verbs = ['raises', 'raised', 'launches', 'launches', 'acquires', 'acquired', 
+                       'announces', 'announced', 'expands', 'expanded', 'partners', 'partnered',
+                       'appoints', 'appointed', 'opens', 'opened', 'closes', 'closed']
+        
+        company_index = words.index(company_lower)
+        if company_index + 1 < len(words):
+            next_word = words[company_index + 1]
+            if any(verb in next_word for verb in action_verbs):
+                return True
     
-    return None, False
+    return False
 
-def find_matching_competitor(headline, companies):
-    """Find matching competitor using partial name matching"""
+def is_competitor_relevant(headline, company_name, competitor_name):
+    """
+    Check if competitor mention is RELEVANT to portfolio company
+    NOT if competitor is the main subject
+    """
     headline_lower = headline.lower()
+    competitor_lower = competitor_name.lower()
+    company_lower = company_name.lower()
     
-    for company_name, data in companies.items():
-        for competitor in data.get('competitors', []):
-            # Exact match
-            if competitor.lower() in headline_lower:
-                return company_name, competitor, True
-            
-            # Partial match
-            words = competitor.lower().split()
-            for word in words:
-                if len(word) > 3 and word in headline_lower:
-                    return company_name, competitor, True
+    # Rule 1: If competitor is at the start, it's the main subject - SKIP
+    if headline_lower.startswith(competitor_lower):
+        return False
     
-    return None, None, False
-
-def scrape_google_news_api(companies):
-    """Scrape Google News using free API (via NewsAPI)"""
-    news_items = defaultdict(list)
+    # Rule 2: If headline is about competitor doing something, SKIP
+    words = headline_lower.split()
+    if competitor_lower in words[:3]:  # Competitor in first 3 words
+        action_verbs = ['raises', 'raised', 'launches', 'acquires', 'announces', 'expands', 'partners']
+        for verb in action_verbs:
+            if verb in headline_lower[:50]:  # In first 50 chars
+                return False
     
-    try:
-        print("  Scraping Google News (via aggregator)...")
-        
-        # Use a free news aggregator that includes Google News
-        for company_name in list(companies.keys())[:20]:  # Limit to avoid rate limits
-            try:
-                # Search for company news
-                search_query = f"{company_name} startup funding india"
-                url = f"https://newsapi.org/v2/everything"
-                
-                params = {
-                    'q': search_query,
-                    'sortBy': 'publishedAt',
-                    'language': 'en',
-                    'pageSize': 50
-                }
-                
-                # Try without API key (limited but free)
-                response = requests.get(url, params=params, timeout=10)
-                
-                if response.status_code == 200:
-                    data = response.json()
-                    for article in data.get('articles', []):
-                        headline = article.get('title', '')
-                        link = article.get('url', '')
-                        published = article.get('publishedAt', '')
-                        source = article.get('source', {}).get('name', 'News API')
-                        
-                        if not headline or not link:
-                            continue
-                        
-                        if not is_within_48_hours(published):
-                            continue
-                        
-                        news_items[company_name].append({
-                            'headline': headline,
-                            'url': link,
-                            'source': source,
-                            'published': published,
-                            'portfolio_company': company_name,
-                            'is_competitor': False
-                        })
-                
-                time.sleep(0.5)
-            except:
-                pass
-        
-        print(f"    Found {sum(len(v) for v in news_items.values())} articles")
-    except Exception as e:
-        print(f"  Error with Google News API: {str(e)[:50]}")
+    # Rule 3: If portfolio company is mentioned, it's relevant
+    if company_lower in headline_lower:
+        return True
     
-    return news_items
-
-def scrape_gnews_api(companies):
-    """Scrape using GNews free API"""
-    news_items = defaultdict(list)
+    # Rule 4: If headline is about sector/category, it's relevant
+    sector_keywords = ['sector', 'industry', 'market', 'ecosystem', 'startup', 'space']
+    if any(kw in headline_lower for kw in sector_keywords):
+        return True
     
-    try:
-        print("  Scraping GNews API...")
-        
-        all_companies = list(companies.keys()) + [c for data in companies.values() for c in data.get('competitors', [])]
-        
-        for company_name in all_companies[:15]:  # Limit to avoid rate limits
-            try:
-                url = "https://gnews.io/api/v4/search"
-                
-                params = {
-                    'q': company_name,
-                    'lang': 'en',
-                    'country': 'in',
-                    'max': 20,
-                    'sortby': 'publishedAt'
-                }
-                
-                response = requests.get(url, params=params, timeout=10)
-                
-                if response.status_code == 200:
-                    data = response.json()
-                    for article in data.get('articles', []):
-                        headline = article.get('title', '')
-                        link = article.get('url', '')
-                        published = article.get('publishedAt', '')
-                        source = article.get('source', {}).get('name', 'GNews')
-                        
-                        if not headline or not link:
-                            continue
-                        
-                        if not is_within_48_hours(published):
-                            continue
-                        
-                        # Find matching company
-                        matched_company, is_comp = find_matching_company(headline, companies)
-                        if matched_company:
-                            news_items[matched_company].append({
-                                'headline': headline,
-                                'url': link,
-                                'source': source,
-                                'published': published,
-                                'portfolio_company': matched_company,
-                                'is_competitor': False
-                            })
-                        else:
-                            # Check for competitors
-                            port_company, competitor, is_competitor = find_matching_competitor(headline, companies)
-                            if port_company:
-                                news_items[port_company].append({
-                                    'headline': headline,
-                                    'url': link,
-                                    'source': source,
-                                    'published': published,
-                                    'portfolio_company': port_company,
-                                    'competitor_name': competitor,
-                                    'is_competitor': True
-                                })
-                
-                time.sleep(1)
-            except:
-                pass
-        
-        print(f"    Found {sum(len(v) for v in news_items.values())} articles")
-    except Exception as e:
-        print(f"  Error with GNews API: {str(e)[:50]}")
-    
-    return news_items
+    # Otherwise, don't match
+    return False
 
 def scrape_rss_feeds(companies):
     """Scrape RSS feeds - past 48 hours"""
@@ -309,30 +197,40 @@ def scrape_rss_feeds(companies):
                 
                 articles_found += 1
                 
-                # Find matching company
-                matched_company, _ = find_matching_company(headline, companies)
-                if matched_company:
-                    news_items[matched_company].append({
-                        'headline': headline,
-                        'url': link,
-                        'source': source_name,
-                        'published': published,
-                        'portfolio_company': matched_company,
-                        'is_competitor': False
-                    })
-                else:
-                    # Check for competitors
-                    port_company, competitor, is_competitor = find_matching_competitor(headline, companies)
-                    if port_company:
-                        news_items[port_company].append({
+                # Check portfolio companies (STRICT matching)
+                matched = False
+                for company_name in companies.keys():
+                    if is_portfolio_company_main_subject(headline, company_name):
+                        news_items[company_name].append({
                             'headline': headline,
                             'url': link,
                             'source': source_name,
                             'published': published,
-                            'portfolio_company': port_company,
-                            'competitor_name': competitor,
-                            'is_competitor': True
+                            'portfolio_company': company_name,
+                            'is_competitor': False
                         })
+                        matched = True
+                        break
+                
+                # Check competitors (only if portfolio company not matched)
+                if not matched:
+                    for company_name, data in companies.items():
+                        for competitor in data.get('competitors', []):
+                            if competitor.lower() in headline.lower():
+                                if is_competitor_relevant(headline, company_name, competitor):
+                                    news_items[company_name].append({
+                                        'headline': headline,
+                                        'url': link,
+                                        'source': source_name,
+                                        'published': published,
+                                        'portfolio_company': company_name,
+                                        'competitor_name': competitor,
+                                        'is_competitor': True
+                                    })
+                                    matched = True
+                                    break
+                        if matched:
+                            break
             
             print(f"    Found {articles_found} recent articles")
         except Exception as e:
@@ -363,6 +261,10 @@ def scrape_direct_sources(companies):
                 if not headline or not link or len(headline) < 10:
                     continue
                 
+                # Skip broken links
+                if 'javascript' in link.lower() or link.startswith('#'):
+                    continue
+                
                 if link.startswith('/'):
                     link = source_url.rstrip('/') + link
                 elif not link.startswith('http'):
@@ -370,30 +272,40 @@ def scrape_direct_sources(companies):
                 
                 articles_found += 1
                 
-                # Find matching company
-                matched_company, _ = find_matching_company(headline, companies)
-                if matched_company:
-                    news_items[matched_company].append({
-                        'headline': headline,
-                        'url': link,
-                        'source': source_name,
-                        'published': datetime.now().isoformat(),
-                        'portfolio_company': matched_company,
-                        'is_competitor': False
-                    })
-                else:
-                    # Check for competitors
-                    port_company, competitor, is_competitor = find_matching_competitor(headline, companies)
-                    if port_company:
-                        news_items[port_company].append({
+                # Check portfolio companies (STRICT matching)
+                matched = False
+                for company_name in companies.keys():
+                    if is_portfolio_company_main_subject(headline, company_name):
+                        news_items[company_name].append({
                             'headline': headline,
                             'url': link,
                             'source': source_name,
                             'published': datetime.now().isoformat(),
-                            'portfolio_company': port_company,
-                            'competitor_name': competitor,
-                            'is_competitor': True
+                            'portfolio_company': company_name,
+                            'is_competitor': False
                         })
+                        matched = True
+                        break
+                
+                # Check competitors (only if portfolio company not matched)
+                if not matched:
+                    for company_name, data in companies.items():
+                        for competitor in data.get('competitors', []):
+                            if competitor.lower() in headline.lower():
+                                if is_competitor_relevant(headline, company_name, competitor):
+                                    news_items[company_name].append({
+                                        'headline': headline,
+                                        'url': link,
+                                        'source': source_name,
+                                        'published': datetime.now().isoformat(),
+                                        'portfolio_company': company_name,
+                                        'competitor_name': competitor,
+                                        'is_competitor': True
+                                    })
+                                    matched = True
+                                    break
+                        if matched:
+                            break
             
             print(f"    Found {articles_found} articles")
         except Exception as e:
@@ -424,7 +336,7 @@ def categorize_news(news_items, companies):
     
     keywords = {
         'funding': ['funding', 'raised', 'series', 'investment', 'seed', 'round', 'capital', 'venture', 'investor', 'fund'],
-        'ma': ['acquisition', 'acquired', 'merger', 'merged', 'buyout', 'ipo', 'exit', 'acquires', 'acquired by'],
+        'ma': ['acquisition', 'acquired', 'merger', 'merged', 'buyout', 'ipo', 'exit', 'acquires'],
         'regulatory': ['regulation', 'compliance', 'policy', 'rbi', 'sebi', 'ban', 'law', 'legal']
     }
     
@@ -547,7 +459,7 @@ def log_dispatch(status, count):
 def main():
     try:
         print("\n" + "="*60)
-        print("JJFO NEWS BULLETIN v4 - COMPREHENSIVE SCRAPER")
+        print("JJFO NEWS BULLETIN - CORRECTED SCRAPER")
         print("="*60)
         print(f"Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         print(f"Scraping news from past 48 hours...")
@@ -559,14 +471,14 @@ def main():
             print("ERROR: No recipients found in recipients.csv")
             exit(1)
         
+        if not companies:
+            print("ERROR: No companies found in companies.csv")
+            exit(1)
+        
         print(f"\n✓ Found {len(companies)} portfolio companies")
         print(f"✓ Sending to {len(recipients)} recipient(s)")
         
-        # Scrape from all sources
-        print("\n--- Scraping Multiple News APIs ---")
-        google_news = scrape_google_news_api(companies)
-        gnews_api = scrape_gnews_api(companies)
-        
+        # Scrape all sources
         print("\n--- Scraping RSS Feeds ---")
         rss_news = scrape_rss_feeds(companies)
         
@@ -574,7 +486,7 @@ def main():
         direct_news = scrape_direct_sources(companies)
         
         # Merge all sources
-        all_news = merge_news(google_news, gnews_api, rss_news, direct_news)
+        all_news = merge_news(rss_news, direct_news)
         total = sum(len(v) for v in all_news.values())
         print(f"\n✓ Total articles found: {total}")
         
