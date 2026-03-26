@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
-JJFO News Bulletin - PRODUCTION SCRAPER v7
-- Google News RSS per company with India geo-filter
-- Real article URLs extracted from Google News entries (source href)
-- India-context filtering (avoids Arata Corp US, etc.)
+JJFO News Bulletin - PRODUCTION SCRAPER v8
+- Google News RSS per company (India geo-filtered)
+- Real article URLs via googlenewsdecoder
+- Proper noun matching (avoids 'loco' matching 'Loco' company)
+- India-context filtering for ambiguous names
 - 48-hour lookback, dedup, prioritised email
 """
 
@@ -12,9 +13,10 @@ from datetime import datetime, timezone
 from collections import defaultdict
 from difflib import SequenceMatcher
 from email.utils import parsedate_to_datetime
+from googlenewsdecoder import new_decoderv1
 
 # ── Config ────────────────────────────────────────────────────────────────────
-RESEND_API_KEY  = os.getenv('RESEND_API_KEY', '')
+RESEND_API_KEY = os.getenv('RESEND_API_KEY', '')
 if not RESEND_API_KEY:
     print("ERROR: RESEND_API_KEY not set"); exit(1)
 print(f"✓ API Key: {RESEND_API_KEY[:12]}...")
@@ -23,7 +25,7 @@ COMPANIES_FILE  = 'companies.csv'
 RECIPIENTS_FILE = 'recipients.csv'
 DISPATCH_LOG    = 'dispatch_log.csv'
 
-# General Indian startup RSS feeds (supplement Google News)
+# Supplementary Indian startup RSS feeds
 GENERAL_RSS = {
     'Inc42':        'https://inc42.com/feed/',
     'YourStory':    'https://yourstory.com/feed',
@@ -36,7 +38,6 @@ GENERAL_RSS = {
     'BW Disrupt':   'https://www.bwdisrupt.com/feed/',
 }
 
-# Known Indian news domains - articles from these are trusted as India-relevant
 INDIAN_DOMAINS = {
     'inc42.com', 'yourstory.com', 'entrackr.com', 'vccircle.com',
     'startuptalky.com', 'the-ken.com', 'techcircle.vccircle.com',
@@ -48,27 +49,89 @@ INDIAN_DOMAINS = {
     'thehindubusinessline.com', 'cnbctv18.com', 'zeebiz.com',
 }
 
-# Garbage patterns to skip
-GARBAGE = re.compile(
-    r'cookie|privacy policy|javascript:|void\(|brand stor|sponsored|'
-    r'subscribe|newsletter|gold price|silver price|biography|personal finance|'
-    r'horoscope|astrology|recipe|cricket score|ipl|bollywood|mastering multi',
-    re.IGNORECASE
-)
-
-# Companies with ambiguous names that could match non-Indian companies
-# For these, require India-domain source OR India keyword in headline
+# Company names that could match non-Indian entities - require India context
 AMBIGUOUS_NAMES = {
     'Arata', 'Terra', 'Grip', 'Loco', 'Wise', 'Simpl', 'Porter',
     'Orange Credit', 'Right Health', 'August Jewellery', 'White Owl',
+    'Sadhan', 'Rooter', 'WorkIndia',
 }
 
 INDIA_KW = re.compile(
     r'\bindia\b|\bindian\b|\bstartup\b|\bcrore\b|\binr\b|\brupee\b|'
     r'\bmumbai\b|\bdelhi\b|\bbangalore\b|\bchennai\b|\bhyderabad\b|\bpune\b|'
-    r'\bblr\b|\bnse\b|\bbse\b|\bsebi\b|\brbi\b',
+    r'\bnse\b|\bbse\b|\bsebi\b|\brbi\b',
     re.IGNORECASE
 )
+
+GARBAGE = re.compile(
+    r'cookie|privacy policy|javascript:|void\(|brand stor|sponsored|'
+    r'subscribe|newsletter|gold price|silver price|biography|personal finance|'
+    r'horoscope|astrology|recipe|cricket score|ipl|bollywood|mastering multi|'
+    r'oracle mastering|digital banking platform journey',
+    re.I
+)
+
+# ── Helpers ───────────────────────────────────────────────────────────────────
+def is_proper_noun(headline, company_name):
+    """
+    Match company name as a proper noun (capitalized) in headline.
+    Prevents 'loco' in 'loco wireless' from matching company 'Loco'.
+    Minimum 4 characters to avoid short false matches.
+    """
+    if len(company_name) < 4:
+        return False
+    pattern = r'\b' + re.escape(company_name) + r'\b'
+    for m in re.finditer(pattern, headline, re.IGNORECASE):
+        matched_text = headline[m.start():m.end()]
+        if matched_text[0].isupper():
+            return True
+    return False
+
+def within_48h(pub_str):
+    if not pub_str:
+        return True
+    try:
+        pub = parsedate_to_datetime(pub_str)
+        now = datetime.now(timezone.utc)
+        if pub.tzinfo is None:
+            pub = pub.replace(tzinfo=timezone.utc)
+        return (now - pub).total_seconds() <= 172800
+    except:
+        return True
+
+def is_garbage(headline, url=''):
+    return (bool(GARBAGE.search(headline)) or
+            'brandstories' in url or
+            'javascript' in url.lower() or
+            len(headline.strip()) < 15)
+
+def is_india_relevant(company_name, headline, source_href=''):
+    if company_name not in AMBIGUOUS_NAMES:
+        return True
+    for domain in INDIAN_DOMAINS:
+        if domain in source_href:
+            return True
+    return bool(INDIA_KW.search(headline))
+
+def decode_url(gn_url):
+    """Decode Google News redirect URL to real article URL."""
+    if 'news.google.com' not in gn_url:
+        return gn_url
+    try:
+        result = new_decoderv1(gn_url)
+        if result and result.get('status'):
+            return result['decoded_url']
+    except:
+        pass
+    return gn_url
+
+def clean_title(title):
+    """Remove ' - Source Name' suffix from Google News titles."""
+    return re.sub(r'\s*[-—]\s*[A-Z][^-—]{2,40}$', '', title).strip()
+
+def google_news_url(query):
+    q = urllib.parse.quote(query + ' India')
+    return f'https://news.google.com/rss/search?q={q}&hl=en-IN&gl=IN&ceid=IN:en'
 
 # ── Data Loading ──────────────────────────────────────────────────────────────
 def load_companies():
@@ -76,9 +139,10 @@ def load_companies():
     try:
         with open(COMPANIES_FILE, 'r', encoding='utf-8') as f:
             reader = csv.reader(f)
-            next(reader)  # skip header
+            next(reader)
             for row in reader:
-                if not row or not row[0].strip(): continue
+                if not row or not row[0].strip():
+                    continue
                 name = row[0].strip()
                 sector = row[1].strip() if len(row) > 1 else ''
                 competitors = [c.strip() for c in row[2:]
@@ -94,83 +158,14 @@ def load_recipients():
         with open(RECIPIENTS_FILE, 'r', encoding='utf-8') as f:
             for row in csv.DictReader(f):
                 e = row.get('Email', '').strip()
-                if e: recipients.append(e)
+                if e:
+                    recipients.append(e)
     except FileNotFoundError:
         print(f"ERROR: {RECIPIENTS_FILE} not found")
     return recipients
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
-def whole_word(text, term):
-    """Whole-word match, minimum 4 characters."""
-    if len(term) < 4: return False
-    return bool(re.search(r'\b' + re.escape(term) + r'\b', text, re.IGNORECASE))
-
-def within_48h(pub_str):
-    if not pub_str: return True
-    try:
-        pub = parsedate_to_datetime(pub_str)
-        now = datetime.now(timezone.utc)
-        if pub.tzinfo is None: pub = pub.replace(tzinfo=timezone.utc)
-        return (now - pub).total_seconds() <= 172800
-    except:
-        return True
-
-def is_garbage(headline, url=''):
-    return (bool(GARBAGE.search(headline)) or
-            'brandstories' in url or
-            'javascript' in url.lower() or
-            len(headline.strip()) < 15)
-
-def get_real_url(entry):
-    """
-    Extract the real article URL from a Google News RSS entry.
-    Google News RSS entries contain the publisher's domain in the 'source' field.
-    We use the source href as the canonical URL base, and fall back to the
-    Google News link (which redirects to the real article).
-    """
-    # Check summary HTML for embedded href
-    summary = entry.get('summary', '')
-    match = re.search(r'href=["\']([^"\']+)["\']', summary)
-    if match:
-        url = match.group(1)
-        if url.startswith('http') and 'google.com' not in url:
-            return url
-
-    # Use source href if available (publisher domain)
-    source = entry.get('source', {})
-    src_href = source.get('href', '')
-
-    # The Google News link itself redirects to the real article
-    # Return it - it's clickable and will redirect properly
-    link = entry.get('link', '')
-    return link
-
-def is_india_relevant(company_name, headline, source_href):
-    """
-    For ambiguous company names, verify the article is about the Indian company.
-    """
-    if company_name not in AMBIGUOUS_NAMES:
-        return True  # Non-ambiguous names: trust the match
-
-    # Check if source is an Indian domain
-    for domain in INDIAN_DOMAINS:
-        if domain in source_href:
-            return True
-
-    # Check for India keywords in headline
-    if INDIA_KW.search(headline):
-        return True
-
-    return False  # Ambiguous name + non-Indian source + no India keyword = skip
-
-def google_news_url(query):
-    """Build Google News RSS URL with India geo-filter."""
-    q = urllib.parse.quote(query + ' India')
-    return f'https://news.google.com/rss/search?q={q}&hl=en-IN&gl=IN&ceid=IN:en'
-
 # ── Scraping ──────────────────────────────────────────────────────────────────
 def scrape_google_news(companies):
-    """Query Google News RSS individually for each portfolio company and competitor."""
     matched = defaultdict(list)
 
     print("\n  [Google News — Portfolio Companies]")
@@ -188,27 +183,30 @@ def scrape_google_news(companies):
                 if not headline: continue
                 if is_garbage(headline): continue
                 if not within_48h(pub): continue
+                if not is_proper_noun(headline, name): continue
                 if not is_india_relevant(name, headline, src_href): continue
 
-                url = get_real_url(entry)
-                # Append source publication name to headline
-                display = f"{headline} — {src_name}" if src_name else headline
+                real_url = decode_url(entry.get('link', ''))
+                display  = clean_title(headline)
+                time.sleep(0.2)
 
                 matched[name].append({
-                    'headline': display, 'url': url,
-                    'source': src_name or 'Google News',
-                    'is_comp': False, 'competitor': None, 'portfolio': name,
+                    'headline': display, 'url': real_url,
+                    'source': src_name, 'is_comp': False,
+                    'competitor': None, 'portfolio': name,
                 })
                 found += 1
             if found:
                 print(f"    {name}: {found} articles")
-            time.sleep(0.4)
+            time.sleep(0.3)
         except Exception as e:
             print(f"    {name}: ERROR {str(e)[:50]}")
 
     print("\n  [Google News — Competitors]")
     for name, data in companies.items():
         for comp in data['competitors']:
+            if len(comp) < 4:
+                continue
             try:
                 feed = feedparser.parse(google_news_url(comp))
                 for entry in feed.entries[:6]:
@@ -221,17 +219,17 @@ def scrape_google_news(companies):
                     if not headline: continue
                     if is_garbage(headline): continue
                     if not within_48h(pub): continue
-                    # Competitor must be the main subject (whole word in headline)
-                    if not whole_word(headline, comp): continue
+                    if not is_proper_noun(headline, comp): continue
                     if not is_india_relevant(comp, headline, src_href): continue
 
-                    url = get_real_url(entry)
-                    display = f"{headline} — {src_name}" if src_name else headline
+                    real_url = decode_url(entry.get('link', ''))
+                    display  = clean_title(headline)
+                    time.sleep(0.2)
 
                     matched[name].append({
-                        'headline': display, 'url': url,
-                        'source': src_name or 'Google News',
-                        'is_comp': True, 'competitor': comp, 'portfolio': name,
+                        'headline': display, 'url': real_url,
+                        'source': src_name, 'is_comp': True,
+                        'competitor': comp, 'portfolio': name,
                     })
                 time.sleep(0.3)
             except:
@@ -240,7 +238,6 @@ def scrape_google_news(companies):
     return matched
 
 def scrape_general_rss(companies):
-    """Scrape general Indian startup RSS feeds for company mentions."""
     matched = defaultdict(list)
     print("\n  [General RSS Feeds]")
 
@@ -257,10 +254,9 @@ def scrape_general_rss(companies):
                 if is_garbage(headline, link): continue
                 if not within_48h(pub): continue
 
-                # Portfolio match
                 matched_any = False
                 for name in companies:
-                    if whole_word(headline, name):
+                    if is_proper_noun(headline, name):
                         if not is_india_relevant(name, headline, link):
                             continue
                         matched[name].append({
@@ -273,10 +269,11 @@ def scrape_general_rss(companies):
                         break
 
                 if not matched_any:
-                    # Competitor match
                     for name, data in companies.items():
                         for comp in data['competitors']:
-                            if whole_word(headline, comp):
+                            if len(comp) < 4:
+                                continue
+                            if is_proper_noun(headline, comp):
                                 matched[name].append({
                                     'headline': headline, 'url': link,
                                     'source': source, 'is_comp': True,
@@ -350,17 +347,16 @@ def format_email(cats):
     total = 0
     for title, key in sections:
         articles = dedup(cats.get(key, []))
-        if not articles: continue
+        if not articles:
+            continue
         lines += [f"\n{'─'*55}", title, '─'*55]
         for a in articles[:12]:
-            if a['is_comp']:
-                label = f"[{a['portfolio']} ← {a['competitor']}]"
-            else:
-                label = f"[{a['portfolio']}]"
+            label = (f"[{a['portfolio']} ← {a['competitor']}]"
+                     if a['is_comp'] else f"[{a['portfolio']}]")
             lines.append(f"\n• {label} {a['headline']}")
             lines.append(f"  {a['url']}")
             total += 1
-    lines.append(f"\n\n─────────────────────────────────────────────────────")
+    lines.append(f"\n\n{'─'*55}")
     lines.append(f"JJFO Intelligence Engine | {today} | {total} articles")
     return "\n".join(lines), total
 
@@ -401,15 +397,16 @@ def log_dispatch(status, count):
     try:
         with open(DISPATCH_LOG, 'a', newline='') as f:
             csv.writer(f).writerow([datetime.now().isoformat(), status, count])
-    except: pass
+    except:
+        pass
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 def main():
     print("\n" + "="*55)
-    print("JJFO NEWS BULLETIN v7 — PRODUCTION SCRAPER")
+    print("JJFO NEWS BULLETIN v8 — PRODUCTION SCRAPER")
     print("="*55)
     print(f"Run: {datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')}")
-    print("Lookback: 48 hours | India-filtered\n")
+    print("Lookback: 48 hours | India-filtered | Real URLs\n")
 
     companies  = load_companies()
     recipients = load_recipients()
