@@ -376,7 +376,7 @@ def format_email_html(cats):
 
     body_parts = []
     total = 0
-    already_shown = set()  # portfolio companies shown in any higher-priority section
+    shown_headlines = []  # headlines already rendered in any section above
     for title, key in sections:
         articles = dedup(cats.get(key, []))
         if not articles:
@@ -387,17 +387,17 @@ def format_email_html(cats):
             f"padding-bottom:6px;'>{title}</h3>"
             f"<ul style='margin:0;padding-left:18px;'>"
         )
-        # 1 article per company per section; in Other News skip companies already shown above
         seen_companies = set()
         for a in articles:
             company_key = (a['portfolio'], a.get('competitor') or '')
             if company_key in seen_companies:
                 continue
-            # Skip in Other News if this portfolio company already appeared in a higher section
-            if key == 'other' and a['portfolio'] in already_shown:
+            # Skip if this headline (or near-duplicate) was already shown in a prior section
+            h = a['headline'].lower()
+            if any(SequenceMatcher(None, h, s).ratio() > 0.82 for s in shown_headlines):
                 continue
             seen_companies.add(company_key)
-            already_shown.add(a['portfolio'])
+            shown_headlines.append(h)
             label = (f"<span style='color:#888;font-size:12px;'>"
                      f"{a['portfolio']} &larr; {a['competitor']}</span>"
                      if a['is_comp']
