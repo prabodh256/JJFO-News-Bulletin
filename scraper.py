@@ -72,19 +72,32 @@ GARBAGE = re.compile(
 )
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+# Words that, when immediately following the company name, indicate it is NOT the startup
+FALSE_CONTEXT = re.compile(
+    r'\b(wireless|railway|locomotive|loco pilot|control system|traction|diesel|electric loco|'
+    r'shed|depot|division|zone|section|signal|track|coach|wagon|bogie|pantograph|'
+    r'overhead|catenary|traction motor|brake|coupler|buffer)\b',
+    re.I
+)
+
 def is_proper_noun(headline, company_name):
     """
     Match company name as a proper noun (capitalized) in headline.
-    Prevents 'loco' in 'loco wireless' from matching company 'Loco'.
-    Minimum 4 characters to avoid short false matches.
+    Also checks that the 10 words after the match don't contain railway/technical context
+    that would indicate it's not the startup.
     """
     if len(company_name) < 4:
         return False
     pattern = r'\b' + re.escape(company_name) + r'\b'
     for m in re.finditer(pattern, headline, re.IGNORECASE):
         matched_text = headline[m.start():m.end()]
-        if matched_text[0].isupper():
-            return True
+        if not matched_text[0].isupper():
+            continue
+        # Check surrounding context (20 chars before + 60 chars after)
+        context = headline[max(0, m.start()-20):m.end()+60]
+        if FALSE_CONTEXT.search(context):
+            continue
+        return True
     return False
 
 def within_48h(pub_str):
@@ -310,13 +323,19 @@ REG_KW = re.compile(r'\bregulat|\brbi\b|\bsebi\b|\bpolicy\b|\bban\b|\blegal\b|\b
 
 def categorise(matched):
     cats = defaultdict(list)
+    # Cap each portfolio company at 3 articles total across all categories
+    company_count = defaultdict(int)
     for articles in matched.values():
         for a in articles:
+            key = a['portfolio']
+            if company_count[key] >= 3:
+                continue
             h = a['headline']
             if   FUNDING_KW.search(h): cats['comp_funding' if a['is_comp'] else 'port_funding'].append(a)
             elif MA_KW.search(h):      cats['comp_ma'      if a['is_comp'] else 'port_ma'].append(a)
             elif REG_KW.search(h):     cats['sector'].append(a)
             else:                      cats['other'].append(a)
+            company_count[key] += 1
     return cats
 
 def dedup(articles):
