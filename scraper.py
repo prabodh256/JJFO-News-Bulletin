@@ -65,7 +65,7 @@ def load_companies():
         with open(COMPANIES_FILE, 'r', encoding='utf-8') as f:
             reader = csv.DictReader(f)
             for row in reader:
-                name = row.get('Company Name', '').strip()
+                name = row.get('Portfolio Company', '').strip()
                 if name:
                     companies[name] = {
                         'sector': row.get('Sector', ''),
