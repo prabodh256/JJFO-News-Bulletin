@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """
-JJFO News Bulletin - CORRECTED Scraper
-Smart matching logic to avoid false positives
+JJFO News Bulletin - BALANCED Scraper
+- Reads article body for better matching
+- Smart matching: not too loose, not too strict
+- Avoids false positives while catching real news
 """
 
 import os
@@ -113,65 +115,73 @@ def is_within_48_hours(published_date_str):
     except:
         return True
 
-def is_portfolio_company_main_subject(headline, company_name):
+def fetch_article_body(url):
+    """Fetch article body from URL"""
+    try:
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+        response = requests.get(url, headers=headers, timeout=10)
+        soup = BeautifulSoup(response.content, 'html.parser')
+        
+        # Extract text from article body
+        article_text = soup.get_text()
+        return article_text[:1000]  # First 1000 chars
+    except:
+        return ""
+
+def match_company_in_text(headline, body, company_name):
     """
-    Check if portfolio company is the MAIN subject of the headline
-    NOT just mentioned somewhere in the text
+    Match company in headline and body
+    More flexible matching
     """
-    headline_lower = headline.lower()
+    text = (headline + " " + body).lower()
     company_lower = company_name.lower()
     
-    # Rule 1: Company name at the start of headline
-    if headline_lower.startswith(company_lower):
+    # Direct match
+    if company_lower in text:
         return True
     
-    # Rule 2: Company name in first 5 words AND followed by action verb
-    words = headline_lower.split()
-    if len(words) > 0 and company_lower in words[:5]:
-        # Check if followed by action verbs
-        action_verbs = ['raises', 'raised', 'launches', 'launches', 'acquires', 'acquired', 
-                       'announces', 'announced', 'expands', 'expanded', 'partners', 'partnered',
-                       'appoints', 'appointed', 'opens', 'opened', 'closes', 'closed']
-        
-        company_index = words.index(company_lower)
-        if company_index + 1 < len(words):
-            next_word = words[company_index + 1]
-            if any(verb in next_word for verb in action_verbs):
-                return True
+    # Partial match (first word or significant part)
+    words = company_lower.split()
+    for word in words:
+        if len(word) > 3 and word in text:
+            return True
     
     return False
 
-def is_competitor_relevant(headline, company_name, competitor_name):
+def match_competitor_in_text(headline, body, company_name, competitor_name):
     """
-    Check if competitor mention is RELEVANT to portfolio company
-    NOT if competitor is the main subject
+    Match competitor in text
+    But avoid if competitor is the main subject
     """
     headline_lower = headline.lower()
+    body_lower = body.lower()
+    text = headline_lower + " " + body_lower
     competitor_lower = competitor_name.lower()
-    company_lower = company_name.lower()
     
-    # Rule 1: If competitor is at the start, it's the main subject - SKIP
+    # Skip if competitor is at start of headline (main subject)
     if headline_lower.startswith(competitor_lower):
         return False
     
-    # Rule 2: If headline is about competitor doing something, SKIP
+    # Skip if competitor appears in first 5 words AND followed by action verb
     words = headline_lower.split()
-    if competitor_lower in words[:3]:  # Competitor in first 3 words
+    if competitor_lower in words[:5]:
         action_verbs = ['raises', 'raised', 'launches', 'acquires', 'announces', 'expands', 'partners']
         for verb in action_verbs:
-            if verb in headline_lower[:50]:  # In first 50 chars
+            if verb in headline_lower[:100]:
                 return False
     
-    # Rule 3: If portfolio company is mentioned, it's relevant
-    if company_lower in headline_lower:
-        return True
+    # Check if competitor is mentioned in text
+    if competitor_lower in text:
+        # Also check if portfolio company is mentioned (context)
+        company_lower = company_name.lower()
+        if company_lower in body_lower:
+            return True
+        
+        # Or if it's in a sector/market context
+        context_keywords = ['sector', 'market', 'industry', 'startup', 'space', 'ecosystem', 'compete', 'competitor']
+        if any(kw in body_lower for kw in context_keywords):
+            return True
     
-    # Rule 4: If headline is about sector/category, it's relevant
-    sector_keywords = ['sector', 'industry', 'market', 'ecosystem', 'startup', 'space']
-    if any(kw in headline_lower for kw in sector_keywords):
-        return True
-    
-    # Otherwise, don't match
     return False
 
 def scrape_rss_feeds(companies):
@@ -195,12 +205,15 @@ def scrape_rss_feeds(companies):
                 if not is_within_48_hours(published):
                     continue
                 
+                # Fetch article body
+                body = fetch_article_body(link)
+                
                 articles_found += 1
                 
-                # Check portfolio companies (STRICT matching)
+                # Check portfolio companies
                 matched = False
                 for company_name in companies.keys():
-                    if is_portfolio_company_main_subject(headline, company_name):
+                    if match_company_in_text(headline, body, company_name):
                         news_items[company_name].append({
                             'headline': headline,
                             'url': link,
@@ -216,21 +229,22 @@ def scrape_rss_feeds(companies):
                 if not matched:
                     for company_name, data in companies.items():
                         for competitor in data.get('competitors', []):
-                            if competitor.lower() in headline.lower():
-                                if is_competitor_relevant(headline, company_name, competitor):
-                                    news_items[company_name].append({
-                                        'headline': headline,
-                                        'url': link,
-                                        'source': source_name,
-                                        'published': published,
-                                        'portfolio_company': company_name,
-                                        'competitor_name': competitor,
-                                        'is_competitor': True
-                                    })
-                                    matched = True
-                                    break
+                            if match_competitor_in_text(headline, body, company_name, competitor):
+                                news_items[company_name].append({
+                                    'headline': headline,
+                                    'url': link,
+                                    'source': source_name,
+                                    'published': published,
+                                    'portfolio_company': company_name,
+                                    'competitor_name': competitor,
+                                    'is_competitor': True
+                                })
+                                matched = True
+                                break
                         if matched:
                             break
+                
+                time.sleep(0.2)  # Be nice to servers
             
             print(f"    Found {articles_found} recent articles")
         except Exception as e:
@@ -270,12 +284,15 @@ def scrape_direct_sources(companies):
                 elif not link.startswith('http'):
                     link = source_url.rstrip('/') + '/' + link
                 
+                # Fetch article body
+                body = fetch_article_body(link)
+                
                 articles_found += 1
                 
-                # Check portfolio companies (STRICT matching)
+                # Check portfolio companies
                 matched = False
                 for company_name in companies.keys():
-                    if is_portfolio_company_main_subject(headline, company_name):
+                    if match_company_in_text(headline, body, company_name):
                         news_items[company_name].append({
                             'headline': headline,
                             'url': link,
@@ -291,21 +308,22 @@ def scrape_direct_sources(companies):
                 if not matched:
                     for company_name, data in companies.items():
                         for competitor in data.get('competitors', []):
-                            if competitor.lower() in headline.lower():
-                                if is_competitor_relevant(headline, company_name, competitor):
-                                    news_items[company_name].append({
-                                        'headline': headline,
-                                        'url': link,
-                                        'source': source_name,
-                                        'published': datetime.now().isoformat(),
-                                        'portfolio_company': company_name,
-                                        'competitor_name': competitor,
-                                        'is_competitor': True
-                                    })
-                                    matched = True
-                                    break
+                            if match_competitor_in_text(headline, body, company_name, competitor):
+                                news_items[company_name].append({
+                                    'headline': headline,
+                                    'url': link,
+                                    'source': source_name,
+                                    'published': datetime.now().isoformat(),
+                                    'portfolio_company': company_name,
+                                    'competitor_name': competitor,
+                                    'is_competitor': True
+                                })
+                                matched = True
+                                break
                         if matched:
                             break
+                
+                time.sleep(0.2)
             
             print(f"    Found {articles_found} articles")
         except Exception as e:
@@ -459,7 +477,7 @@ def log_dispatch(status, count):
 def main():
     try:
         print("\n" + "="*60)
-        print("JJFO NEWS BULLETIN - CORRECTED SCRAPER")
+        print("JJFO NEWS BULLETIN - BALANCED SCRAPER")
         print("="*60)
         print(f"Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         print(f"Scraping news from past 48 hours...")
