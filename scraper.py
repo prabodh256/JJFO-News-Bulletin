@@ -323,19 +323,13 @@ REG_KW = re.compile(r'\bregulat|\brbi\b|\bsebi\b|\bpolicy\b|\bban\b|\blegal\b|\b
 
 def categorise(matched):
     cats = defaultdict(list)
-    # Cap each portfolio company at 3 articles total across all categories
-    company_count = defaultdict(int)
     for articles in matched.values():
         for a in articles:
-            key = a['portfolio']
-            if company_count[key] >= 3:
-                continue
             h = a['headline']
             if   FUNDING_KW.search(h): cats['comp_funding' if a['is_comp'] else 'port_funding'].append(a)
             elif MA_KW.search(h):      cats['comp_ma'      if a['is_comp'] else 'port_ma'].append(a)
             elif REG_KW.search(h):     cats['sector'].append(a)
             else:                      cats['other'].append(a)
-            company_count[key] += 1
     return cats
 
 # Source reliability tier — lower number = more reliable
@@ -392,7 +386,13 @@ def format_email_html(cats):
             f"padding-bottom:6px;'>{title}</h3>"
             f"<ul style='margin:0;padding-left:18px;'>"
         )
-        for a in articles[:1]:
+        # 1 article per company per section — pick best source for each company
+        seen_companies = set()
+        for a in articles:
+            company_key = (a['portfolio'], a.get('competitor') or '')
+            if company_key in seen_companies:
+                continue
+            seen_companies.add(company_key)
             label = (f"<span style='color:#888;font-size:12px;'>"
                      f"{a['portfolio']} &larr; {a['competitor']}</span>"
                      if a['is_comp']
