@@ -72,29 +72,43 @@ GARBAGE = re.compile(
 )
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
-# Words that, when immediately following the company name, indicate it is NOT the startup
+# Full-headline disqualifiers per company name (regex matched against entire headline)
+COMPANY_BLOCKLIST = {
+    'Loco': re.compile(
+        r'\b(railway|railways|indian railway|locomotive|loco pilot|loco shed|'
+        r'wireless control|control system|traction|diesel loco|electric loco|'
+        r'rolling stock|train|rail|irctc|irfc|rlda|rites|rail vikas)\b', re.I
+    ),
+}
+
+# Generic context words near the match that indicate non-startup usage
 FALSE_CONTEXT = re.compile(
-    r'\b(wireless|railway|locomotive|loco pilot|control system|traction|diesel|electric loco|'
-    r'shed|depot|division|zone|section|signal|track|coach|wagon|bogie|pantograph|'
-    r'overhead|catenary|traction motor|brake|coupler|buffer)\b',
+    r'\b(wireless|railway|railways|locomotive|loco pilot|control system|traction|'
+    r'diesel|electric loco|shed|depot|division|zone|signal|track|coach|wagon|'
+    r'bogie|pantograph|overhead|catenary|traction motor|brake|coupler|buffer|'
+    r'rolling stock|rail|irctc|irfc|rlda|rites|rail vikas|crore order|supply order)\b',
     re.I
 )
 
 def is_proper_noun(headline, company_name):
     """
     Match company name as a proper noun (capitalized) in headline.
-    Also checks that the 10 words after the match don't contain railway/technical context
-    that would indicate it's not the startup.
+    Rejects matches where surrounding context or full headline indicates
+    a non-startup usage (e.g. Indian Railways 'loco' terminology).
     """
     if len(company_name) < 4:
         return False
+    # Per-company full-headline blocklist check
+    if company_name in COMPANY_BLOCKLIST:
+        if COMPANY_BLOCKLIST[company_name].search(headline):
+            return False
     pattern = r'\b' + re.escape(company_name) + r'\b'
     for m in re.finditer(pattern, headline, re.IGNORECASE):
         matched_text = headline[m.start():m.end()]
         if not matched_text[0].isupper():
             continue
-        # Check surrounding context (20 chars before + 60 chars after)
-        context = headline[max(0, m.start()-20):m.end()+60]
+        # Check surrounding context (30 chars before + 80 chars after)
+        context = headline[max(0, m.start()-30):m.end()+80]
         if FALSE_CONTEXT.search(context):
             continue
         return True
