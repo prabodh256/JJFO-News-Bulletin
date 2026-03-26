@@ -338,9 +338,29 @@ def categorise(matched):
             company_count[key] += 1
     return cats
 
+# Source reliability tier — lower number = more reliable
+SOURCE_RANK = {
+    'the ken': 1, 'the morning context': 1, 'the cap table': 1,
+    'economic times': 2, 'economictimes': 2, 'et': 2,
+    'mint': 2, 'livemint': 2, 'business standard': 2,
+    'financial express': 2, 'businessline': 2,
+    'inc42': 3, 'yourstory': 3, 'entrackr': 3, 'vccircle': 3,
+    'techcrunch': 3, 'reuters': 2, 'bloomberg': 2,
+    'ndtv': 4, 'hindustan times': 4, 'times of india': 4,
+    'moneycontrol': 4, 'cnbctv18': 4, 'zeebiz': 4,
+}
+
+def source_rank(article):
+    src = article.get('source', '').lower()
+    for key, rank in SOURCE_RANK.items():
+        if key in src:
+            return rank
+    return 9  # unknown sources ranked last
+
 def dedup(articles):
     seen, unique = [], []
-    for a in articles:
+    # Sort by reliability before dedup so best source wins
+    for a in sorted(articles, key=source_rank):
         h = a['headline'].lower()
         if not any(SequenceMatcher(None, h, s.lower()).ratio() > 0.82 for s in seen):
             unique.append(a)
@@ -372,7 +392,7 @@ def format_email_html(cats):
             f"padding-bottom:6px;'>{title}</h3>"
             f"<ul style='margin:0;padding-left:18px;'>"
         )
-        for a in articles[:12]:
+        for a in articles[:1]:
             label = (f"<span style='color:#888;font-size:12px;'>"
                      f"{a['portfolio']} &larr; {a['competitor']}</span>"
                      if a['is_comp']
