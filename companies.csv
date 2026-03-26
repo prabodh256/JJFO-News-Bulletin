@@ -1,64 +1,61 @@
 Company Name,Sector,Competitors
-Agnikul,SpaceTech,Skyroot Aerospace, Relativity Space, Axiom Space, SpaceX
-GalaxEye,SpaceTech,Satellogic, Capella Space, Maxar Technologies
-Zouk,Consumer,Miraggio, Lavie, Baggit
-Orbit Space,SpaceTech,Skyroot Aerospace, Agnikul, Blue Origin, Bellatrix Aerospace
-EPlane,Mobility,Joby Aviation, Lilium, Archer Aviation, Sarla Aviation
-Immunito AI,HealthTech,Tempus AI, Flatiron Health, Guardant Health
-PlayShifu,EdTech,Miko AI
-Custiv,B2B,Zetwerk
-Dr. Paws,PetCare,PetCurious, Heads Up for Tails, DogSpot
-Arata,Consumer,MOXIE, Honasa
-AsliPundit,Media,NewsBytes, Inshorts, The Ken
-Asset Vantage,FinTech,Groww, Kuvera, Moneycontrol
-AssureKit,InsurTech,Acko, Digit Insurance, Go Digit
-Astro-Motors,Mobility,Ather Energy, Bajaj, Hero MotoCorp
-AU SFB,FinTech,ICICI Bank, HDFC Bank, Axis Bank
-August Jewellery,E-commerce,Tanishq, Malabar Gold, CaratLane
-BombayPlay,Entertainment,Hotstar, Netflix, Amazon Prime
-Credflow,FinTech,Razorpay, Instamojo, Cashfree
-DeepSync,AI,Nvidia, OpenAI, Anthropic
-Doctalks,HealthTech,Practo, 1mg, Healthians
-Dunzo,Logistics,Blinkit, Zepto, Instamart
-EpayLater,FinTech,CRED, Slice, LazyPay
-Firecompass,Cybersecurity,Fortinet, Palo Alto Networks, CrowdStrike
-Furlenco,Furniture,Urban Ladder, Pepperfry, Godrej Interio
-Genius Learning,EdTech,Byju's, Unacademy, Vedantu
-GigForce,HR Tech,Workday, ADP, SAP SuccessFactors
-Goldi Solar,GreenTech,Waaree Energies, Adani Green, Tata Power
-Grayquest,Cybersecurity,Fortinet, Palo Alto Networks, CrowdStrike
-GRIP,Mobility,Ather Energy, Bajaj, Hero MotoCorp
-I-Genetics,HealthTech,Invitro, Thyrocare, SRL Diagnostics
-India Family Mart,Retail,Reliance Retail, Dmart, Bata
-IndiaMart,B2B,Global Sources, Alibaba, TradeKey
-IndigoLearn,EdTech,Byju's, Unacademy, Vedantu
-Infinite Analytics,Analytics,Tableau, Power BI, Looker
-Lavelle Networks,Networking,Cisco, Juniper, Arista
-Loadshare,Logistics,Blinkit, Zepto, Instamart
-MindHouse,Mental Health,Wysa, Mindstrong, Ginger
-NSEIndia,FinTech,BSE, MCX, NCDEX
-Nysaa,HealthTech,Practo, 1mg, Healthians
-OfBusiness,B2B,Global Sources, Alibaba, TradeKey
-Ondoor Concepts,Retail,Reliance Retail, Dmart, Bata
-Orange Credit,FinTech,CRED, Slice, LazyPay
-Orbitt Space,SpaceTech,Skyroot Aerospace, Agnikul, Blue Origin
-PB Fintech,FinTech,Razorpay, Instamojo, Stripe
-Pico Express,Logistics,Blinkit, Zepto, Instamart
-PostCard,E-commerce,Nykaa, Unilever, Himalaya
-RainPlatform,Analytics,Tableau, Power BI, Looker
-Right Health,HealthTech,Practo, 1mg, Healthians
-Rooter,Gaming,MPL, Dream11, Paytm First Games
-Sadhan,AgriTech,Jio Kisan, BigHaat, AgroStar
-Shifu,EdTech,Byju's, Unacademy, Vedantu
-SK Finance,FinTech,Razorpay, Instamojo, Stripe
-Smaaash,Entertainment,Hotstar, Netflix, Amazon Prime
-Stranger & Sons,Beverages,Diageo, Pernod Ricard, Brown-Forman
-Suryoday SFB,FinTech,ICICI Bank, HDFC Bank, Axis Bank
-Terra,GreenTech,Waaree Energies, Adani Green, Tata Power
-White Owl,Cybersecurity,Fortinet, Palo Alto Networks, CrowdStrike
-WorkIndia,HR Tech,Workday, ADP, SAP SuccessFactors
-Wysa,Mental Health,Mindstrong, Ginger, Headspace
-Zipsure,InsurTech,Acko, Digit Insurance, Go Digit
-Zouk,FinTech,Razorpay, Instamojo, PayU
-Ambit Finvest,FinTech,Razorpay, Instamojo, Stripe
-API Holdings,Logistics,Blinkit, Zepto, Instamart
+Agnikul,Spacetech,Skyroot Aerospace,Relativity Space,Rocket Lab
+Ambit Finvest,Fintech,Indifi,Lendingkart,NeoGrowth
+API Holdings,Healthtech,Netmeds,Apollo 24/7,Tata 1mg
+Arata,Consumer,Mamaearth,The Moms Co,WOW Skin Science
+AsliPundit,Gaming,Dream11,MPL,My11Circle
+Asset Vantage,Fintech,Addepar,Masttro,Mirador
+AssureKit,Insurtech,Riskcovry,Turtlemint,Zopper
+Astro-Motors,Mobility,Ather Energy,Ola Electric,TVS iQube
+AU SFB,Banking,Equitas SFB,Ujjivan SFB,Jana Bank
+August Jewellery,Consumer,Melorra,CaratLane,BlueStone
+BombayPlay,Gaming,Zynga,Moonfrog Labs,PlaySimple
+Credflow,Fintech,KhataBook,OkCredit,Vyapar
+Custiv,Manufacturing,Zetwerk,Xometry,Fictiv
+DeepSync,AI,Synthesia,Descript,Rephrase.ai
+Doctalks,Healthtech,Practo,Lybrate,MediBuddy
+Dr. Paws,Petcare,Heads Up For Tails,Zigly,Vetic
+Dunzo,Logistics,Swiggy Instamart,Zepto,Blinkit
+EpayLater,Fintech,Simpl,Lazypay,ZestMoney
+Eplane,Mobility,Lilium,Joby Aviation,Archer Aviation
+Firecompass,Cybersecurity,CyCognito,Randori,Palo Alto Networks
+Furlenco equity,Consumer,Rentomojo,Cityfurnish,Fabrento
+Furlenco warrants,Fintech,N/A,-,-
+Galaxeye,Spacetech,Capella Space,ICEYE,Pixxel
+Genius Learning,Edtech,BYJU'S,Unacademy,Vedantu
+GigForce,HRTech,Apna,BetterPlace,WorkIndia
+Goldi Solar,Energy,Waaree Energies,Vikram Solar,Tata Power Solar
+Grayquest,Fintech,Propelld,Financepeer,Eduvanz
+GRIP,Fintech,Wint Wealth,Leaf Round,Pyse
+I-Genetics,Healthtech,Medall,Metropolis,SRL Diagnostics
+Immunito AI,Healthtech,Atomwise,Recursion Pharma,BenevolentAI
+IndiaMart,B2B,Udaan,Moglix,Power2SME
+IndigoLearn,Edtech,SuperProfs,CAClubIndia,EduPristine
+Infinite Analytics,Data,Mu Sigma,Fractal Analytics,LatentView
+Lavelle Networks,SaaS,Aryaka,Velocloud,Silver Peak
+Loadshare,Logistics,Delhivery,Ecom Express,Rivigo
+MindHouse,Healthtech,Cult.fit,Headspace,Calm
+NSEIndia,Fintech,BSE,MCX,NCDEX
+Nysaa,Consumer,Nykaa,Purplle,Myntra
+OfBusiness,Fintech,Moglix,Zetwerk,Infra.market
+Ondoor Concepts,Retail,BigBasket,Blinkit,Jiomart
+Orange Credit,Fintech,MoneyTap,KreditBee,EarlySalary
+Orbitt Space,Spacetech,Dhruva Space,Bellatrix Aerospace,Pixxel
+PB Fintech,Fintech,PolicyBazaar,PaisaBazaar,InsuranceDekho
+Pico Express,Logistics,Porter,Lynk,Shadowfax
+PostCard/Wingreens,FMCG,Veeba,Urban Platter,iD Fresh Food
+RainPlatform,Fintech,KredX,Vayana Network,-
+Right Health,Healthtech,Aster DM,Thumbay Health,-
+Rooter,Gaming,Loco,Twitch,YouTube Gaming
+Sadhan,Fintech,Aye Finance,Kinara Capital,-
+Shifu,Edtech,Osmo,Skillmatics,Magic Crate
+SK Finance,Fintech,Shriram Finance,Cholamandalam,Mahindra Finance
+Smaaash,Consumer,Timezone,Amoeba,Fun City
+Stranger & Sons,Consumer,Greater Than,Hapusa,Jaisalmer Gin
+Suryoday SFB,Banking,Ujjivan,AU SFB,Equitas
+Terra,Fintech,Wise,Payoneer,Revolut
+White Owl,Consumer,Bira 91,Simba,Kingfisher
+WorkIndia,HRTech,Apna,QuikrJobs,BetterPlace
+Wysa,Healthtech,Woebot,Youper,Headspace
+Zipsure,Insurtech,Digit Insurance,Acko,Go Digit
+Zouk,Consumer,Baggit,Lavie,Caprese
