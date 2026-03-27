@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
 """
-JJFO News Bulletin - PRODUCTION SCRAPER v9
+JJFO News Bulletin - PRODUCTION SCRAPER v10
 - Google News RSS per company (India geo-filtered)
 - Real article URLs via googlenewsdecoder
-- Proper noun matching (avoids 'loco' matching 'Loco' company)
+- Proper noun matching (avoids false positives)
 - India-context filtering for ambiguous names
+- Search aliases for ambiguous/renamed companies
 - 48-hour lookback, dedup, prioritised email
 
-FIXES vs v8:
-  - Added TechCrunch + Economic Times to GENERAL_RSS
-  - Removed dead/unreliable feeds (IndianWeb2, BW Disrupt)
-  - decode_url() now logs failures instead of silently swallowing them
-  - is_proper_noun() min-length lowered from 4 to 2 (fixes NSE, AU, etc.)
+FIXES vs v9:
+  - SEARCH_ALIAS dict maps portfolio names to correct brand search terms
+  - AMBIGUOUS_NAMES updated to match corrected company identities
+  - GARBAGE filter extended to block stock analyst/price target news
+  - companies.csv: August Jewellery renamed Melorra, Right Health removed
 """
 
 import os, csv, re, time, urllib.parse, requests, feedparser
@@ -31,7 +32,7 @@ COMPANIES_FILE  = 'companies.csv'
 RECIPIENTS_FILE = 'recipients.csv'
 DISPATCH_LOG    = 'dispatch_log.csv'
 
-# REMOVED: IndianWeb2 (feed frequently dead), BW Disrupt (feed unreliable)
+# REMOVED: IndianWeb2 (dead), BW Disrupt (unreliable)
 # ADDED:   TechCrunch, Economic Times Startups
 GENERAL_RSS = {
     'Inc42':        'https://inc42.com/feed/',
@@ -58,10 +59,25 @@ INDIAN_DOMAINS = {
     'thehindubusinessline.com', 'cnbctv18.com', 'zeebiz.com',
 }
 
+# Search aliases: when Google News is queried for a portfolio company,
+# use this term instead of the raw company name to get accurate results.
+# Format: { 'Portfolio Name in companies.csv': 'Better search query' }
+SEARCH_ALIAS = {
+    'Arata':               'Arata shampoo haircare',
+    'Terra':               'Letsterra gaming',
+    'GRIP':                'Gripinvest',
+    'Orange Retail Finance': 'Orange Retail Finance India',
+    'White Owl':           'White Owl Brewery',
+    'Rooter':              'Rooter.gg esports',
+    'WorkIndia':           'WorkIndia jobs app',
+    'Sadhan':              'Sadhan microfinance India',
+}
+
+# Ambiguous names that require India-context before being accepted.
+# These are names that could appear in non-Indian/non-startup contexts.
 AMBIGUOUS_NAMES = {
-    'Arata', 'Terra', 'Grip', 'Loco', 'Wise', 'Simpl', 'Porter',
-    'Orange Credit', 'Right Health', 'August Jewellery', 'White Owl',
-    'Sadhan', 'Rooter', 'WorkIndia',
+    'Arata', 'Terra', 'GRIP', 'White Owl', 'Sadhan', 'Rooter', 'WorkIndia',
+    'Asset Vantage', 'Genius Learning', 'Infinite Analytics', 'Pico Express',
 }
 
 INDIA_KW = re.compile(
@@ -71,11 +87,19 @@ INDIA_KW = re.compile(
     re.IGNORECASE
 )
 
+# Extended to filter out stock analyst / price-target noise
 GARBAGE = re.compile(
     r'cookie|privacy policy|javascript:|void\(|brand stor|sponsored|'
     r'subscribe|newsletter|gold price|silver price|biography|personal finance|'
     r'horoscope|astrology|recipe|cricket score|ipl|bollywood|mastering multi|'
-    r'oracle mastering|digital banking platform journey',
+    r'oracle mastering|digital banking platform journey|'
+    r'price target|target price|initiates coverage|initiates at|'
+    r'buy rating|sell rating|overweight rating|underweight rating|'
+    r'outperform rating|neutral rating|analyst initiat|brokerage initiat|'
+    r'broking house|stock recommendation|stock rating|upgrades to buy|'
+    r'downgrades to sell|downgrades to neutral|raises target|cuts target|'
+    r'maintains buy|maintains sell|maintains neutral|share target|'
+    r'share price target|equity research|research report',
     re.I
 )
 
@@ -97,6 +121,7 @@ FALSE_CONTEXT = re.compile(
 )
 
 def is_proper_noun(headline, company_name):
+    """Match company name as a proper noun. Min-length 2 (v9 fix)."""
     if len(company_name) < 2:
         return False
     if company_name in COMPANY_BLOCKLIST:
@@ -140,6 +165,7 @@ def is_india_relevant(company_name, headline, source_href=''):
     return bool(INDIA_KW.search(headline))
 
 def decode_url(gn_url):
+    """Decode Google News redirect. Logs failures (v9 fix)."""
     if 'news.google.com' not in gn_url:
         return gn_url
     try:
@@ -155,7 +181,14 @@ def decode_url(gn_url):
 def clean_title(title):
     return re.sub(r'\s*[-\u2014]\s*[A-Z][^-\u2014]{2,40}$', '', title).strip()
 
-def google_news_url(query):
+def google_news_url(name):
+    """Build Google News RSS URL, using SEARCH_ALIAS if defined."""
+    search_term = SEARCH_ALIAS.get(name, name) + ' India'
+    q = urllib.parse.quote(search_term)
+    return f'https://news.google.com/rss/search?q={q}&hl=en-IN&gl=IN&ceid=IN:en'
+
+def google_news_url_raw(query):
+    """Build Google News RSS URL for a raw query (competitors)."""
     q = urllib.parse.quote(query + ' India')
     return f'https://news.google.com/rss/search?q={q}&hl=en-IN&gl=IN&ceid=IN:en'
 
@@ -193,6 +226,7 @@ def load_recipients():
 # -- Scraping -----------------------------------------------------------------
 def scrape_google_news(companies):
     matched = defaultdict(list)
+
     print("\n  [Google News -- Portfolio Companies]")
     for name, data in companies.items():
         try:
@@ -223,13 +257,14 @@ def scrape_google_news(companies):
             time.sleep(0.3)
         except Exception as e:
             print(f"    {name}: ERROR {str(e)[:50]}")
+
     print("\n  [Google News -- Competitors]")
     for name, data in companies.items():
         for comp in data['competitors']:
             if len(comp) < 2:
                 continue
             try:
-                feed = feedparser.parse(google_news_url(comp))
+                feed = feedparser.parse(google_news_url_raw(comp))
                 for entry in feed.entries[:6]:
                     headline = entry.get('title', '').strip()
                     pub      = entry.get('published', '')
@@ -452,7 +487,7 @@ def log_dispatch(status, count):
 # -- Main ---------------------------------------------------------------------
 def main():
     print("\n" + "="*55)
-    print("JJFO NEWS BULLETIN v9 -- PRODUCTION SCRAPER")
+    print("JJFO NEWS BULLETIN v10 -- PRODUCTION SCRAPER")
     print("="*55)
     print(f"Run: {datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')}")
     print("Lookback: 48 hours | India-filtered | Real URLs\n")
