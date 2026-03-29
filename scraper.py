@@ -354,12 +354,12 @@ def categorise(matched):
 
 # Source reliability tier — lower number = more reliable
 SOURCE_RANK = {
-    'the ken': 1, 'the morning context': 1, 'the cap table': 1,
+    'inc42': 1, 'yourstory': 1, 'entrackr': 1, 'vccircle': 1,
+    'techcrunch': 1, 'startuptalky': 1,
     'economic times': 2, 'economictimes': 2, 'et': 2,
     'mint': 2, 'livemint': 2, 'business standard': 2,
     'financial express': 2, 'businessline': 2, 'reuters': 2, 'bloomberg': 2,
-    'inc42': 3, 'yourstory': 3, 'entrackr': 3, 'vccircle': 3,
-    'techcrunch': 3, 'startuptalky': 3,
+    'the ken': 3, 'the morning context': 3, 'the cap table': 3,
     'ndtv': 4, 'hindustan times': 4, 'times of india': 4,
     'moneycontrol': 4, 'cnbctv18': 4, 'zeebiz': 4,
 }
