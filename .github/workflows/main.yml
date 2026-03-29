@@ -1,7 +1,7 @@
 name: JJFO Daily News Scraper
 on:
   schedule:
-    - cron: '40 4 * * *'
+    - cron: '30 2 * * *'
   workflow_dispatch:
 jobs:
   scrape:
