@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """
-JJFO News Bulletin - PRODUCTION SCRAPER v8.8
-- Start 1:30 AM GMT, Send 2:30 AM GMT
+JJFO News Bulletin - PRODUCTION SCRAPER v9.0
+- Start 1:30 AM GMT, Send immediately after completion
 - Human-like delays (1.0-2.0s) between requests
 - Google News RSS per company (India geo-filtered)
 - Real article URLs via googlenewsdecoder
 - Proper noun matching & India-context filtering
+- Hardened "Market Noise" and "Dated News" filters
 """
 
 import os, csv, re, time, urllib.parse, requests, feedparser
@@ -76,8 +77,13 @@ GARBAGE = re.compile(
     r'stocks to watch|brokerage prefers|sell call|buy call|technical analysis|' \
     r'dividend|bonus issue|rights issue|corporate actions|market update|' \
     r'sensex|nifty|market opens|market closes|target of rs|target price|recommendation|analyst view|buy vikram solar|buy '
-, re.I
+    , re.I
 )
+
+FALSE_CONTEXT = re.compile(r'railway|train|rail|wireless control|traction|locomotive|shed|depot|wagons|bhel|concord control|indian railways', re.I)
+COMPANY_BLOCKLIST = {
+    'Loco': re.compile(r'railway|train|rail|wireless control|traction|locomotive|shed|depot|wagons|bhel|concord control|indian railways', re.I)
+}
 
 def is_proper_noun(headline, company_name):
     if len(company_name) < 4: return False
@@ -93,20 +99,17 @@ def is_proper_noun(headline, company_name):
     return False
 
 def within_48h(pub_str):
-    if not pub_str: return False  # Stricter: Reject if no date
+    if not pub_str: return False
     try:
         pub = parsedate_to_datetime(pub_str)
         now = datetime.now(timezone.utc)
         if pub.tzinfo is None: pub = pub.replace(tzinfo=timezone.utc)
-        # Strict 48-hour limit
         diff = (now - pub).total_seconds()
-        if diff < 0: return True # Future dates (timezones) are okay
+        if diff < 0: return True
         return diff <= 172800
-    except: return False # Stricter: Reject if date parsing fails
+    except: return False
 
 def is_garbage(headline, url=''):
-    # Extra check for market noise in headline
-
     return (bool(GARBAGE.search(headline)) or 'brandstories' in url or 'javascript' in url.lower() or len(headline.strip()) < 15)
 
 def is_india_relevant(company_name, headline, source_href=''):
@@ -169,11 +172,11 @@ def scrape_google_news(companies):
                 if not headline or is_garbage(headline) or not within_48h(pub) or not is_proper_noun(headline, name) or not is_india_relevant(name, headline, src_href): continue
                 real_url = decode_url(entry.get('link', ''))
                 display = clean_title(headline)
-                time.sleep(1.0) # SAFER DELAY
+                time.sleep(1.2)
                 matched[name].append({'headline': display, 'url': real_url, 'source': src_name, 'is_comp': False, 'competitor': None, 'portfolio': name})
                 found += 1
             if found: print(f"    {name}: {found} articles")
-            time.sleep(1.5) # SAFER DELAY
+            time.sleep(1.5)
         except Exception as e: print(f"    {name}: ERROR {str(e)[:50]}")
     
     print("\n  [Google News — Competitors]")
@@ -190,11 +193,11 @@ def scrape_google_news(companies):
                     if not headline or is_garbage(headline) or not within_48h(pub) or not is_proper_noun(headline, comp) or not is_india_relevant(comp, headline, src_href): continue
                     real_url = decode_url(entry.get('link', ''))
                     display = clean_title(headline)
-                    time.sleep(1.0) # SAFER DELAY
+                    time.sleep(1.2)
                     matched[name].append({'headline': display, 'url': real_url, 'source': src_name, 'is_comp': True, 'competitor': comp, 'portfolio': name})
                     found += 1
                 if found: print(f"    {comp}: {found} articles")
-                time.sleep(1.5) # SAFER DELAY
+                time.sleep(1.5)
             except Exception as e: print(f"    {comp}: ERROR {str(e)[:50]}")
     return matched
 
@@ -223,7 +226,7 @@ def scrape_general_rss(companies):
                         else: continue
                         break
             if found: print(f"    {source}: {found} matched")
-            time.sleep(2.0) # SAFER DELAY
+            time.sleep(2.0)
         except Exception as e: print(f"    {source}: ERROR {str(e)[:50]}")
     return matched
 
@@ -297,7 +300,7 @@ def format_email_html(cats):
 def send_email(html, recipients):
     success = True
     for to in recipients:
-        r = requests.post("https://api.resend.com/emails", headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"}, json={"from": "JJFO News <noreply@jjfo.in>", "to": to, "subject": f"JJFO News Bulletin \u2014 {datetime.now().strftime('%B %d, %Y')}", "html": html}, timeout=15)
+        r = requests.post("https://api.resend.com/emails", headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"}, json={"from": "Prabodh <prabodh@jjfo.in>", "to": to, "subject": f"JJFO News Bulletin \u2014 {datetime.now().strftime('%B %d, %Y')}", "html": html}, timeout=15)
         if r.status_code == 200: print(f"  ✓ Sent to {to}")
         else: print(f"  ✗ Failed ({r.status_code}): {r.text[:120]}"); success = False
     return success
@@ -316,15 +319,6 @@ def main():
     if not all_matched: log_dispatch('No Articles', 0); return
     cats = categorise(all_matched)
     html, total = format_email_html(cats)
-    
-    # ── WAIT UNTIL 2:30 AM GMT ──
-    print("\n── Waiting until 02:30:00 UTC ─────────────────────────")
-    while True:
-        now_utc = datetime.now(timezone.utc)
-        if (now_utc.hour == 2 and now_utc.minute >= 30) or now_utc.hour > 2: break
-        print(f"  [{now_utc.strftime('%H:%M:%S')}] Waiting...")
-        time.sleep(60)
-    
     if send_email(html, recipients): log_dispatch('Success', total)
     else: log_dispatch('Failed', 0)
 
