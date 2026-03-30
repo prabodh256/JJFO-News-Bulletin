@@ -69,7 +69,14 @@ GARBAGE = re.compile(
     r'cookie|privacy policy|javascript:|void\(|brand stor|sponsored|'
     r'subscribe|newsletter|gold price|silver price|biography|personal finance|'
     r'horoscope|astrology|recipe|cricket score|ipl|bollywood|mastering multi|'
-    r'oracle mastering|digital banking platform journey',
+    r'oracle mastering|digital banking platform journey|robbed|video goes viral|'
+    r'regime change|protest|sea lanes|indian ocean|naval|deployment|'
+    r'horoscope|astrology|recipe|cricket score|ipl|bollywood|'
+    r'stock to buy|buy target|upside target|technical breakout|top gainers|'
+    r'top losers|bulk deal|block deal|shares to be in focus|share price|'
+    r'stocks to watch|brokerage prefers|sell call|buy call|technical analysis|'
+    r'dividend|bonus issue|rights issue|corporate actions|market update|'
+    r'sensex|nifty|market opens|market closes',
     re.I
 )
 
@@ -103,15 +110,21 @@ def is_proper_noun(headline, company_name):
     return False
 
 def within_48h(pub_str):
-    if not pub_str: return True
+    if not pub_str: return False  # Stricter: Reject if no date
     try:
         pub = parsedate_to_datetime(pub_str)
         now = datetime.now(timezone.utc)
         if pub.tzinfo is None: pub = pub.replace(tzinfo=timezone.utc)
-        return (now - pub).total_seconds() <= 172800
-    except: return True
+        # Strict 48-hour limit
+        diff = (now - pub).total_seconds()
+        if diff < 0: return True # Future dates (timezones) are okay
+        return diff <= 172800
+    except: return False # Stricter: Reject if date parsing fails
 
 def is_garbage(headline, url=''):
+    # Extra check for market noise in headline
+    if any(kw in headline.lower() for kw in ["stock to buy", "buy target", "upside target", "technical breakout", "bulk deal", "block deal"]):
+        return True
     return (bool(GARBAGE.search(headline)) or 'brandstories' in url or 'javascript' in url.lower() or len(headline.strip()) < 15)
 
 def is_india_relevant(company_name, headline, source_href=''):
