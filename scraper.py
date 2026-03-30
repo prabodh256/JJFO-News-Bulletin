@@ -66,34 +66,17 @@ INDIA_KW = re.compile(
 )
 
 GARBAGE = re.compile(
-    r'cookie|privacy policy|javascript:|void\(|brand stor|sponsored|'
-    r'subscribe|newsletter|gold price|silver price|biography|personal finance|'
-    r'horoscope|astrology|recipe|cricket score|ipl|bollywood|mastering multi|'
-    r'oracle mastering|digital banking platform journey|robbed|video goes viral|'
-    r'regime change|protest|sea lanes|indian ocean|naval|deployment|'
-    r'horoscope|astrology|recipe|cricket score|ipl|bollywood|'
-    r'stock to buy|buy target|upside target|technical breakout|top gainers|'
-    r'top losers|bulk deal|block deal|shares to be in focus|share price|'
-    r'stocks to watch|brokerage prefers|sell call|buy call|technical analysis|'
-    r'dividend|bonus issue|rights issue|corporate actions|market update|'
-    r'sensex|nifty|market opens|market closes',
-    re.I
-)
-
-COMPANY_BLOCKLIST = {
-    'Loco': re.compile(
-        r'\b(railway|railways|indian railway|locomotive|loco pilot|loco shed|'
-        r'wireless control|control system|traction|diesel loco|electric loco|'
-        r'rolling stock|train|rail|irctc|irfc|rlda|rites|rail vikas)\b', re.I
-    ),
-}
-
-FALSE_CONTEXT = re.compile(
-    r'\b(wireless|railway|railways|locomotive|loco pilot|control system|traction|'
-    r'diesel|electric loco|shed|depot|division|zone|signal|track|coach|wagon|'
-    r'bogie|pantograph|overhead|catenary|traction motor|brake|coupler|buffer|'
-    r'rolling stock|rail|irctc|irfc|rlda|rites|rail vikas|crore order|supply order)\b',
-    re.I
+    r'cookie|privacy policy|javascript:|void\(|brand stor|sponsored|' \
+    r'subscribe|newsletter|gold price|silver price|biography|personal finance|' \
+    r'horoscope|astrology|recipe|cricket score|ipl|bollywood|mastering multi|' \
+    r'oracle mastering|digital banking platform journey|robbed|video goes viral|' \
+    r'regime change|protest|sea lanes|indian ocean|naval|deployment|' \
+    r'stock to buy|buy target|upside target|technical breakout|top gainers|' \
+    r'top losers|bulk deal|block deal|shares to be in focus|share price|' \
+    r'stocks to watch|brokerage prefers|sell call|buy call|technical analysis|' \
+    r'dividend|bonus issue|rights issue|corporate actions|market update|' \
+    r'sensex|nifty|market opens|market closes|target of rs|target price|recommendation|analyst view|buy vikram solar|buy '
+, re.I
 )
 
 def is_proper_noun(headline, company_name):
@@ -123,8 +106,7 @@ def within_48h(pub_str):
 
 def is_garbage(headline, url=''):
     # Extra check for market noise in headline
-    if any(kw in headline.lower() for kw in ["stock to buy", "buy target", "upside target", "technical breakout", "bulk deal", "block deal"]):
-        return True
+
     return (bool(GARBAGE.search(headline)) or 'brandstories' in url or 'javascript' in url.lower() or len(headline.strip()) < 15)
 
 def is_india_relevant(company_name, headline, source_href=''):
