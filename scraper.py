@@ -65,7 +65,8 @@ GARBAGE = re.compile(
     r'top losers|bulk deal|block deal|shares to be in focus|share price|' \
     r'stocks to watch|brokerage prefers|sell call|buy call|technical analysis|' \
     r'dividend|bonus issue|rights issue|corporate actions|market update|' \
-    r'sensex|nifty|market opens|market closes|target of rs|target price|recommendation|analyst view|buy vikram solar|buy '
+    r'sensex|nifty|market opens|market closes|target of rs|target price|recommendation|analyst view|buy vikram solar|buy |' \
+    r'stocks advance|holiday-curtailed|checks in at|airport|spotted at'
     , re.I
 )
 
@@ -80,12 +81,23 @@ def is_proper_noun(headline, company_name):
     if len(company_name) < 4: return False
     if company_name in COMPANY_BLOCKLIST and COMPANY_BLOCKLIST[company_name].search(headline):
         return False
+    
+    # Ensure the company name is not just part of a list or a generic mention
+    # e.g., "Ola Electric Top Gainer" -> "Top Gainer" is a red flag, but we catch that in GARBAGE.
+    # We want to ensure the company is the subject.
+    
     pattern = r'\b' + re.escape(company_name) + r'\b'
     for m in re.finditer(pattern, headline, re.IGNORECASE):
         matched_text = headline[m.start():m.end()]
         if not matched_text[0].isupper(): continue
         context = headline[max(0, m.start()-30):m.end()+80]
         if FALSE_CONTEXT.search(context): continue
+        
+        # Check if the company name is immediately followed by market noise terms
+        noise_context = headline[m.end():m.end()+30]
+        if re.search(r'\btop gainer\b|\btop loser\b|\bstock\b|\bshare\b', noise_context, re.I):
+            continue
+            
         return True
     return False
 
