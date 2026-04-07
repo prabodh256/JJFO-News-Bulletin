@@ -15,9 +15,7 @@ from email.utils import parsedate_to_datetime
 from googlenewsdecoder import new_decoderv1
 
 # ── Config ────────────────────────────────────────────────────────────────────
-RESEND_API_KEY = os.getenv('RESEND_API_KEY', '')
-if not RESEND_API_KEY:
-    print("ERROR: RESEND_API_KEY not set"); exit(1)
+RESEND_API_KEY = os.getenv('RESEND_API_KEY', 'test_key')
 
 COMPANIES_FILE  = 'companies.csv'
 RECIPIENTS_FILE = 'recipients.csv'
@@ -46,12 +44,13 @@ AMBIGUOUS_NAMES = {
     'Orange Credit', 'Right Health', 'August Jewellery', 'White Owl',
     'Sadhan', 'Rooter', 'WorkIndia',
     'GRIP', 'SK Finance', 'AU SFB', 'PB Fintech', 'Zipsure', 'Zouk',
+    'River', 'Revolt', 'Dunzo', 'Udaan'
 }
 
 INDIA_KW = re.compile(
     r'\bindia\b|\bindian\b|\bstartup\b|\bcrore\b|\binr\b|\brupee\b|'
     r'\bmumbai\b|\bdelhi\b|\bbangalore\b|\bchennai\b|\bhyderabad\b|\bpune\b|'
-    r'\bnse\b|\bbse\b|\bsebi\b|\brbi\b',
+    r'\bnse\b|\bbse\b|\bsebi\b|\brbi\b|\bunicorn\b|\bseries [a-z]\b|\bfunding\b',
     re.IGNORECASE
 )
 
@@ -64,9 +63,10 @@ GARBAGE = re.compile(
     r'stock to buy|buy target|upside target|technical breakout|top gainers|' \
     r'top losers|bulk deal|block deal|shares to be in focus|share price|' \
     r'stocks to watch|brokerage prefers|sell call|buy call|technical analysis|' \
-    r'dividend|bonus issue|rights issue|corporate actions|market update|' \
-    r'sensex|nifty|market opens|market closes|target of rs|target price|recommendation|analyst view|buy vikram solar|buy |' \
-    r'stocks advance|holiday-curtailed|checks in at|airport|spotted at|and more|pairing|roundup|briefs|digest|quick takes|top stories of the day|premier|portal|login|dashboard|platform features'
+    r'target of rs|target price|recommendation|analyst view|buy vikram solar|' \
+    r'stocks advance|holiday-curtailed|checks in at|airport|spotted at|' \
+    r'pairing|roundup|briefs|digest|quick takes|top stories of the day|premier|' \
+    r'portal|login|dashboard|platform features'
     , re.I
 )
 
@@ -78,22 +78,22 @@ COMPANY_BLOCKLIST = {
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def is_proper_noun(headline, company_name):
-    if len(company_name) < 4: return False
+    if len(company_name) < 3: return False
     if company_name in COMPANY_BLOCKLIST and COMPANY_BLOCKLIST[company_name].search(headline):
         return False
     
-    # Ensure the company name is not just part of a list or a generic mention
-    # e.g., "Ola Electric Top Gainer" -> "Top Gainer" is a red flag, but we catch that in GARBAGE.
-    # We want to ensure the company is the subject.
-    
     pattern = r'\b' + re.escape(company_name) + r'\b'
+    # Relaxed case check: if the company name is in AMBIGUOUS_NAMES, enforce title case.
+    # Otherwise, allow any case if it's a unique name.
     for m in re.finditer(pattern, headline, re.IGNORECASE):
         matched_text = headline[m.start():m.end()]
-        if not matched_text[0].isupper(): continue
+        if company_name in AMBIGUOUS_NAMES and not matched_text[0].isupper():
+            continue
+            
         context = headline[max(0, m.start()-30):m.end()+80]
         if FALSE_CONTEXT.search(context): continue
         
-        # Check if the company name is immediately followed by market noise terms
+        # Market noise check
         noise_context = headline[m.end():m.end()+30]
         if re.search(r'\btop gainer\b|\btop loser\b|\bstock\b|\bshare\b', noise_context, re.I):
             continue
@@ -116,10 +116,14 @@ def is_garbage(headline, url=''):
     return (bool(GARBAGE.search(headline)) or 'brandstories' in url or 'javascript' in url.lower() or len(headline.strip()) < 15)
 
 def is_india_relevant(company_name, headline, source_href=''):
-    if company_name not in AMBIGUOUS_NAMES: return True
+    # Always relevant if from an Indian domain
     for domain in INDIAN_DOMAINS:
         if domain in source_href: return True
-    return bool(INDIA_KW.search(headline))
+    # If not from an Indian domain, and name is ambiguous, check for India keywords
+    if company_name in AMBIGUOUS_NAMES:
+        return bool(INDIA_KW.search(headline))
+    # Otherwise, assume relevant (e.g., specific company names)
+    return True
 
 def decode_url(gn_url):
     if 'news.google.com' not in gn_url: return gn_url
@@ -133,12 +137,12 @@ def clean_title(title):
     return re.sub(r'\s*[-—]\s*[A-Z][^-—]{2,40}$', '', title).strip()
 
 def sniper_url(query):
-    strict_query = f'"{query}" ({SITE_QUERY}) when:2d'
+    strict_query = f'"{query}" when:2d'
     q = urllib.parse.quote(strict_query)
     return f'https://news.google.com/rss/search?q={q}&hl=en-IN&gl=IN&ceid=IN:en'
 
 def radar_url(sector_name):
-    query = f'("{sector_name}" OR "{sector_name} startup") ({SITE_QUERY}) when:2d'
+    query = f'("{sector_name}" OR "{sector_name} startup") when:2d'
     q = urllib.parse.quote(query)
     return f'https://news.google.com/rss/search?q={q}&hl=en-IN&gl=IN&ceid=IN:en'
 
@@ -174,20 +178,22 @@ def run_sniper(companies):
     print("\n  [The Sniper — Exact Matches]")
     for name, data in companies.items():
         try:
-            feed = feedparser.parse(sniper_url(name))
+            url = sniper_url(name)
+            feed = feedparser.parse(url)
             found = 0
-            for entry in feed.entries[:10]:
+            print(f"    Searching {name}: {url} (found {len(feed.entries)} raw entries)")
+            for entry in feed.entries[:30]:
                 headline = entry.get('title', '').strip()
                 pub, source = entry.get('published', ''), entry.get('source', {})
                 src_href, src_name = source.get('href', ''), source.get('title', '')
                 if not headline or is_garbage(headline) or not within_48h(pub) or not is_proper_noun(headline, name) or not is_india_relevant(name, headline, src_href): continue
                 real_url = decode_url(entry.get('link', ''))
                 display = clean_title(headline)
-                time.sleep(random.uniform(2.0, 4.0))
+                time.sleep(0.1)
                 matched[name].append({'headline': display, 'url': real_url, 'source': src_name, 'is_comp': False, 'competitor': None, 'portfolio': name})
                 found += 1
             if found: print(f"    {name}: {found} articles")
-            time.sleep(random.uniform(2.0, 4.0))
+            time.sleep(0.1)
         except Exception as e: print(f"    {name}: ERROR {str(e)[:50]}")
     
     for name, data in companies.items():
@@ -196,18 +202,18 @@ def run_sniper(companies):
             try:
                 feed = feedparser.parse(sniper_url(comp))
                 found = 0
-                for entry in feed.entries[:6]:
+                for entry in feed.entries[:20]:
                     headline = entry.get('title', '').strip()
                     pub, source = entry.get('published', ''), entry.get('source', {})
                     src_href, src_name = source.get('href', ''), source.get('title', '')
                     if not headline or is_garbage(headline) or not within_48h(pub) or not is_proper_noun(headline, comp) or not is_india_relevant(comp, headline, src_href): continue
                     real_url = decode_url(entry.get('link', ''))
                     display = clean_title(headline)
-                    time.sleep(random.uniform(2.0, 4.0))
+                    time.sleep(0.1)
                     matched[name].append({'headline': display, 'url': real_url, 'source': src_name, 'is_comp': True, 'competitor': comp, 'portfolio': name})
                     found += 1
                 if found: print(f"    {comp}: {found} articles")
-                time.sleep(random.uniform(2.0, 4.0))
+                time.sleep(0.1)
             except Exception as e: print(f"    {comp}: ERROR {str(e)[:50]}")
     return matched
 
@@ -218,9 +224,11 @@ def run_radar(companies):
     
     for sector in unique_sectors:
         try:
-            feed = feedparser.parse(radar_url(sector))
+            url = radar_url(sector)
+            feed = feedparser.parse(url)
             found = 0
-            for entry in feed.entries[:10]:
+            print(f"    Searching {sector}: {url} (found {len(feed.entries)} raw entries)")
+            for entry in feed.entries[:30]:
                 headline = clean_title(entry.get('title', '').strip())
                 pub, source = entry.get('published', ''), entry.get('source', {})
                 src_href, src_name = source.get('href', ''), source.get('title', '')
@@ -235,11 +243,11 @@ def run_radar(companies):
                 if is_known: continue
                 
                 real_url = decode_url(entry.get('link', ''))
-                time.sleep(random.uniform(2.0, 4.0))
+                time.sleep(0.1)
                 radar_intel['sector_news'].append({'headline': headline, 'url': real_url, 'source': src_name, 'is_comp': False, 'competitor': f"Sector: {sector}", 'portfolio': sector})
                 found += 1
-            if found: print(f"    {sector}: {found} emerging news")
-            time.sleep(random.uniform(2.0, 4.0))
+            if found: print(f"    {sector}: {found} articles")
+            time.sleep(0.1)
         except Exception as e: print(f"    {sector}: ERROR {str(e)[:50]}")
     return radar_intel
 
@@ -302,13 +310,10 @@ def format_email_html(cats):
         articles = dedup(cats.get(key, []))
         if not articles: continue
         body_parts.append(f"<h3 style='margin:28px 0 8px;color:#1a1a2e;font-size:13px;letter-spacing:1px;text-transform:uppercase;border-bottom:2px solid #e8e8e8;padding-bottom:6px;'>{title}</h3><ul style='margin:0;padding-left:18px;'>")
-        seen_companies = set()
         for a in articles:
-            company_key = (a['portfolio'], a.get('competitor') or '')
-            if company_key in seen_companies: continue
             h = a['headline'].lower()
             if any(SequenceMatcher(None, h, s).ratio() > 0.82 for s in shown_headlines): continue
-            seen_companies.add(company_key); shown_headlines.append(h)
+            shown_headlines.append(h)
             
             if a['competitor'] and "Sector:" in a['competitor']:
                 label = f"<span style='color:#b22222;font-size:12px;font-weight:bold;'>{a['competitor']}</span>"
