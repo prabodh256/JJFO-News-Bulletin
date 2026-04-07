@@ -66,7 +66,7 @@ GARBAGE = re.compile(
     r'stocks to watch|brokerage prefers|sell call|buy call|technical analysis|' \
     r'dividend|bonus issue|rights issue|corporate actions|market update|' \
     r'sensex|nifty|market opens|market closes|target of rs|target price|recommendation|analyst view|buy vikram solar|buy |' \
-    r'stocks advance|holiday-curtailed|checks in at|airport|spotted at'
+    r'stocks advance|holiday-curtailed|checks in at|airport|spotted at|and more|pairing|roundup|briefs|digest|quick takes|top stories of the day|premier|portal|login|dashboard|platform features'
     , re.I
 )
 
