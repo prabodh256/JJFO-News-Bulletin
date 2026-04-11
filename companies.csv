@@ -1,60 +1,59 @@
-Portfolio Company,Sector,Competitors
-Agnikul,SpaceTech,Skyroot Aerospace,Rocket Lab,Relativity Space,Firefly Aerospace,SpaceX
-Ambit Finvest,SME Lending,Lendingkart,FlexiLoans,InCred,NeoGrowth,Indifi
-API Holdings,HealthTech,Tata 1mg,Netmeds,Apollo 24/7,Flipkart Health+
-Arata,D2C Personal Care,Mamaearth,Plum,Minimalist,mCaffeine,WOW Skin Science
-AsliPundit,Sports Gaming,Dream11,MPL,WinZO,Games24x7,My11Circle
-Asset Vantage,WealthTech,Addepar,Campden Wealth,Mirador,INDmoney
-AssureKit,InsurTech,Riskcovry,Turtlemint,Symbo,Zopper
-Astro-Motors,EV Mobility,Ather Energy,Ola Electric,Revolt,Tork Motors,River
-AU SFB,Banking,Equitas SFB,Ujjivan SFB,Jana SFB,ESAF SFB
-August Jewellery,D2C Jewelry,CaratLane,Giva,BlueStone,Mia by Tanishq
-BombayPlay,Casual Gaming,Nazara,Moonfrog,Octro,Junglee Games,Gametion
-Credflow,FinTech SaaS,Clear,KredX,Cashflo,FloBiz
-Custiv,B2B Manufacturing,Zetwerk,Karkhana.io,Factana,Chizel
-DeepSync,Generative AI,Murf AI,Resemble AI,ElevenLabs,Dubverse
-Doctalks,HealthTech,Practo,MediBuddy,mFine,Lybrate,eSanjeevani
-Dr. Paws,PetCare,Supertails,Heads Up For Tails,Wiggles,JustDogs
-Dunzo,Quick Commerce,Swiggy Instamart,Zepto,Blinkit,BigBasket Daily
-EpayLater,B2B BNPL,Simpl,Lazypay,ZestMoney,BharatPe Pay Later
-EPlane,Aerospace / eVTOL,Lilium,Joby Aviation,Archer Aviation,Vertical Aerospace
-Firecompass,Cybersecurity,CyCognito,Randori,Palo Alto Networks,CrowdStrike
-Furlenco,Furniture Rental,Rentomojo,Cityfurnish,Fabrento,Pepperfry Rental
-GalaxEye,SpaceTech,Capella Space,ICEYE,Pixxel,Umbra
-Genius Learning,EdTech,BYJU'S,Unacademy,Vedantu,PW (PhysicsWallah)
-GigForce,HR Tech,Apna,BetterPlace,WorkIndia,Rozgaar India
-Goldi Solar,GreenTech,Waaree Energies,Vikram Solar,Tata Power Solar,Adani Solar
-Grayquest,Ed-FinTech,Propelld,Financepeer,Eduvanz,Credenc
-GRIP,Alt Investments,Wint Wealth,Leaf Round,Pyse,Tyke Invest
-I-Genetics,Diagnostics,Medall,Metropolis,SRL Diagnostics,Dr. Lal PathLabs
-Immunito AI,Biotech AI,Atomwise,Recursion Pharma,BenevolentAI,Insilico Medicine
-IndiaMart,B2B Marketplace,Udaan,Moglix,Power2SME,JioMart Partner
-IndigoLearn,EdTech,SuperProfs,CAClubIndia,EduPristine,Kaplan India
-Infinite Analytics,AI Analytics,Mu Sigma,Fractal Analytics,LatentView,Tiger Analytics
-Lavelle Networks,SD-WAN Networking,Aryaka,Velocloud,Silver Peak,Versa Networks
-Loadshare,Logistics,Delhivery,Ecom Express,Rivigo,Xpressbees
-MindHouse,Wellness,Cult.fit,Headspace,Calm,SARVA
-NSEIndia,Financial Exchange,BSE,MCX,NCDEX,India INX
-Nysaa,Value Retail,V-Mart,Vishal Mega Mart,Zudio,City Kart,Style Baazar
-OfBusiness,B2B Commerce,Moglix,Zetwerk,Infra.market,Metalbook
-Ondoor Concepts,Grocery Retail,BigBasket,Blinkit,Jiomart,DMart Ready
-Orange Credit,Digital Lending,MoneyTap,KreditBee,EarlySalary,CASHe
-Orbitt Space,SpaceTech,Dhruva Space,Bellatrix Aerospace,Pixxel,SatSure
-PB Fintech,InsurTech,PolicyBazaar,PaisaBazaar,InsuranceDekho,Coverfox
-Pico Express,Logistics,Porter,Lynk,Shadowfax,Loadshare
-PlayShifu,EdTech / AR Toys,Osmo,Skillmatics,Magic Crate,Byju's Learning App
-PostCard,D2C Snacks,Veeba,Urban Platter,iD Fresh Food,Slurrp Farm
-RainPlatform,Earned Wage Access,KredX,Vayana Network,Refyne,SalaryBox
-Right Health,HealthTech,Aster DM,Thumbay Health,Apollo Hospitals,Fortis Healthcare
-Rooter,Game Streaming,Loco,Twitch,YouTube Gaming,Nimo TV
-Sadhan,Agri-FinTech,Aye Finance,Kinara Capital,Samunnati,Jai Kisan
-SK Finance,Vehicle Finance,Shriram Finance,Cholamandalam,Mahindra Finance,Bajaj Finance
-Smaaash,Arcade Entertainment,Timezone,Amoeba,Fun City,Funcity
-Stranger & Sons,Craft Spirits,Greater Than,Hapusa,Jaisalmer Gin,Terai Gin
-Suryoday SFB,Banking,Ujjivan,AU SFB,Equitas,Jana SFB
-Terra,Educational Gaming,Wise,Payoneer,Revolut,TransferWise
-White Owl,Craft Beer,Bira 91,Simba,Kingfisher,BrewFellas
-WorkIndia,HR Tech,Apna,QuikrJobs,BetterPlace,Rozgaar India
-Wysa,Mental Health,Woebot,Youper,Headspace,Calm App
-Zipsure,InsurTech,Digit Insurance,Acko,Go Digit,Policybazaar
-Zouk,D2C Lifestyle,Baggit,Lavie,Caprese,DailyObjects
+company_name,sector
+Agnikul,SpaceTech
+Ambit Finvest,SME Lending
+API Holdings,HealthTech
+Arata,D2C Personal Care
+AsliPundit,Sports Gaming
+Asset Vantage,WealthTech
+AssureKit,InsurTech
+Astro-Motors,EV Mobility
+AU SFB,Banking
+August Jewellery,D2C Jewelry
+BombayPlay,Casual Gaming
+Credflow,FinTech SaaS
+Custiv,B2B Manufacturing
+DeepSync,Generative AI
+Doctalks,HealthTech
+Dr. Paws,PetCare
+Dunzo,Quick Commerce
+EpayLater,B2B BNPL
+EPlane,Aerospace / eVTOL
+Firecompass,Cybersecurity
+Furlenco,Furniture Rental
+GalaxEye,SpaceTech
+Genius Learning,EdTech
+GigForce,HR Tech
+Goldi Solar,GreenTech
+Grayquest,Ed-FinTech
+GRIP,Alt Investments
+I-Genetics,Diagnostics
+Immunito AI,Biotech AI
+IndiaMart,B2B Marketplace
+IndigoLearn,EdTech
+Infinite Analytics,AI Analytics
+Lavelle Networks,SD-WAN Networking
+Loadshare,Logistics
+MindHouse,Wellness
+NSEIndia,Financial Exchange
+Nysaa,Value Retail
+OfBusiness,B2B Commerce
+Ondoor Concepts,Grocery Retail
+Orange Credit,Digital Lending
+Orbitt Space,SpaceTech
+PB Fintech,InsurTech
+Pico Express,Logistics
+PlayShifu,EdTech / AR Toys
+PostCard,D2C Snacks
+RainPlatform,Earned Wage Access
+Rooter,Game Streaming
+Sadhan,Agri-FinTech
+SK Finance,Vehicle Finance
+Smaaash,Arcade Entertainment
+Stranger & Sons,Craft Spirits
+Suryoday SFB,Banking
+Terra,Educational Gaming
+White Owl,Craft Beer
+WorkIndia,HR Tech
+Wysa,Mental Health
+Zipsure,InsurTech
+Zouk,D2C Lifestyle
