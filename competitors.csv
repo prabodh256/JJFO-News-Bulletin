@@ -1,31 +1,241 @@
-portfolio_company,competitor,sector,source,discovered_on
-Swageazy,Darwinbox,HR Tech,,
-Swageazy,Keka,HR Tech,,
-Agnikul,Skyroot Aerospace,SpaceTech,,
-Agnikul,Pixxel,SpaceTech,,
-Arata,Mamaearth,Personal Care,,
-Arata,Minimalist,Personal Care,,
-Loadshare,Delhivery,Logistics,,
-Loadshare,Ecom Express,Logistics,,
-SK Finance,Shriram Finance,NBFC,,
-SK Finance,Cholamandalam,NBFC,,
-SK Finance,Bajaj Finance,NBFC,,
-Orange Credit,KreditBee,Digital Lending,,
-Orange Credit,MoneyTap,Digital Lending,,
-Sadhan,Aye Finance,Microfinance,,
-White Owl,Kingfisher,Brewery,,
-Terra,Rooter.gg,Game Streaming,,
-I-Genetics,Metropolis Healthcare,Diagnostics,,
-Goldi Solar,Waaree Energies,Solar,,
-BombayPlay,Nazara Technologies,Gaming,,
-EPlane,Joby Aviation,eVTOL,,
-EPlane,Vertical Aerospace,eVTOL,,
-Astro-Motors,Ather Energy,EV Mobility,,
-AsliPundit,WinZO,Gaming,,
-Infinite Analytics,Fractal Analytics,AI Analytics,,
-Infinite Analytics,LatentView,AI Analytics,,
-Firecompass,Palo Alto Networks,Cybersecurity,,
-Firecompass,CrowdStrike,Cybersecurity,,
-Immunito AI,Insilico Medicine,HealthTech,,
-GalaxEye,Umbra,SpaceTech,,
-Ambit Finvest,InCred,NBFC,,
+portfolio_company,competitor,sector
+Agnikul,Skyroot Aerospace,SpaceTech
+Agnikul,Rocket Lab,SpaceTech
+Agnikul,Relativity Space,SpaceTech
+Agnikul,Firefly Aerospace,SpaceTech
+Agnikul,SpaceX,SpaceTech
+Ambit Finvest,Lendingkart,SME Lending
+Ambit Finvest,FlexiLoans,SME Lending
+Ambit Finvest,InCred,SME Lending
+Ambit Finvest,NeoGrowth,SME Lending
+Ambit Finvest,Indifi,SME Lending
+API Holdings,Tata 1mg,HealthTech
+API Holdings,Netmeds,HealthTech
+API Holdings,Apollo 24/7,HealthTech
+API Holdings,Flipkart Health+,HealthTech
+Arata,Mamaearth,D2C Personal Care
+Arata,Plum,D2C Personal Care
+Arata,Minimalist,D2C Personal Care
+Arata,mCaffeine,D2C Personal Care
+Arata,WOW Skin Science,D2C Personal Care
+AsliPundit,Dream11,Sports Gaming
+AsliPundit,MPL,Sports Gaming
+AsliPundit,WinZO,Sports Gaming
+AsliPundit,Games24x7,Sports Gaming
+AsliPundit,My11Circle,Sports Gaming
+Asset Vantage,Addepar,WealthTech
+Asset Vantage,Campden Wealth,WealthTech
+Asset Vantage,Mirador,WealthTech
+Asset Vantage,INDmoney,WealthTech
+AssureKit,Riskcovry,InsurTech
+AssureKit,Turtlemint,InsurTech
+AssureKit,Symbo,InsurTech
+AssureKit,Zopper,InsurTech
+Astro-Motors,Ather Energy,EV Mobility
+Astro-Motors,Ola Electric,EV Mobility
+Astro-Motors,Revolt,EV Mobility
+Astro-Motors,Tork Motors,EV Mobility
+Astro-Motors,River,EV Mobility
+AU SFB,Equitas SFB,Banking
+AU SFB,Ujjivan SFB,Banking
+AU SFB,Jana SFB,Banking
+AU SFB,ESAF SFB,Banking
+August Jewellery,CaratLane,D2C Jewelry
+August Jewellery,Giva,D2C Jewelry
+August Jewellery,BlueStone,D2C Jewelry
+August Jewellery,Mia by Tanishq,D2C Jewelry
+BombayPlay,Nazara,Casual Gaming
+BombayPlay,Moonfrog,Casual Gaming
+BombayPlay,Octro,Casual Gaming
+BombayPlay,Junglee Games,Casual Gaming
+BombayPlay,Gametion,Casual Gaming
+Credflow,Clear,FinTech SaaS
+Credflow,KredX,FinTech SaaS
+Credflow,Cashflo,FinTech SaaS
+Credflow,FloBiz,FinTech SaaS
+Custiv,Zetwerk,B2B Manufacturing
+Custiv,Karkhana.io,B2B Manufacturing
+Custiv,Factana,B2B Manufacturing
+Custiv,Chizel,B2B Manufacturing
+DeepSync,Murf AI,Generative AI
+DeepSync,Resemble AI,Generative AI
+DeepSync,ElevenLabs,Generative AI
+DeepSync,Dubverse,Generative AI
+Doctalks,Practo,HealthTech
+Doctalks,MediBuddy,HealthTech
+Doctalks,mFine,HealthTech
+Doctalks,Lybrate,HealthTech
+Doctalks,eSanjeevani,HealthTech
+Dr. Paws,Supertails,PetCare
+Dr. Paws,Heads Up For Tails,PetCare
+Dr. Paws,Wiggles,PetCare
+Dr. Paws,JustDogs,PetCare
+Dunzo,Swiggy Instamart,Quick Commerce
+Dunzo,Zepto,Quick Commerce
+Dunzo,Blinkit,Quick Commerce
+Dunzo,BigBasket Daily,Quick Commerce
+EpayLater,Simpl,B2B BNPL
+EpayLater,Lazypay,B2B BNPL
+EpayLater,ZestMoney,B2B BNPL
+EpayLater,BharatPe Pay Later,B2B BNPL
+EPlane,Lilium,Aerospace / eVTOL
+EPlane,Joby Aviation,Aerospace / eVTOL
+EPlane,Archer Aviation,Aerospace / eVTOL
+EPlane,Vertical Aerospace,Aerospace / eVTOL
+Firecompass,CyCognito,Cybersecurity
+Firecompass,Randori,Cybersecurity
+Firecompass,Palo Alto Networks,Cybersecurity
+Firecompass,CrowdStrike,Cybersecurity
+Furlenco,Rentomojo,Furniture Rental
+Furlenco,Cityfurnish,Furniture Rental
+Furlenco,Fabrento,Furniture Rental
+Furlenco,Pepperfry Rental,Furniture Rental
+GalaxEye,Capella Space,SpaceTech
+GalaxEye,ICEYE,SpaceTech
+GalaxEye,Pixxel,SpaceTech
+GalaxEye,Umbra,SpaceTech
+Genius Learning,BYJU'S,EdTech
+Genius Learning,Unacademy,EdTech
+Genius Learning,Vedantu,EdTech
+Genius Learning,PW (PhysicsWallah),EdTech
+GigForce,Apna,HR Tech
+GigForce,BetterPlace,HR Tech
+GigForce,WorkIndia,HR Tech
+GigForce,Rozgaar India,HR Tech
+Goldi Solar,Waaree Energies,GreenTech
+Goldi Solar,Vikram Solar,GreenTech
+Goldi Solar,Tata Power Solar,GreenTech
+Goldi Solar,Adani Solar,GreenTech
+Grayquest,Propelld,Ed-FinTech
+Grayquest,Financepeer,Ed-FinTech
+Grayquest,Eduvanz,Ed-FinTech
+Grayquest,Credenc,Ed-FinTech
+GRIP,Wint Wealth,Alt Investments
+GRIP,Leaf Round,Alt Investments
+GRIP,Pyse,Alt Investments
+GRIP,Tyke Invest,Alt Investments
+I-Genetics,Medall,Diagnostics
+I-Genetics,Metropolis,Diagnostics
+I-Genetics,SRL Diagnostics,Diagnostics
+I-Genetics,Dr. Lal PathLabs,Diagnostics
+Immunito AI,Atomwise,Biotech AI
+Immunito AI,Recursion Pharma,Biotech AI
+Immunito AI,BenevolentAI,Biotech AI
+Immunito AI,Insilico Medicine,Biotech AI
+IndiaMart,Udaan,B2B Marketplace
+IndiaMart,Moglix,B2B Marketplace
+IndiaMart,Power2SME,B2B Marketplace
+IndiaMart,JioMart Partner,B2B Marketplace
+IndigoLearn,SuperProfs,EdTech
+IndigoLearn,CAClubIndia,EdTech
+IndigoLearn,EduPristine,EdTech
+IndigoLearn,Kaplan India,EdTech
+Infinite Analytics,Mu Sigma,AI Analytics
+Infinite Analytics,Fractal Analytics,AI Analytics
+Infinite Analytics,LatentView,AI Analytics
+Infinite Analytics,Tiger Analytics,AI Analytics
+Lavelle Networks,Aryaka,SD-WAN Networking
+Lavelle Networks,Velocloud,SD-WAN Networking
+Lavelle Networks,Silver Peak,SD-WAN Networking
+Lavelle Networks,Versa Networks,SD-WAN Networking
+Loadshare,Delhivery,Logistics
+Loadshare,Ecom Express,Logistics
+Loadshare,Rivigo,Logistics
+Loadshare,Xpressbees,Logistics
+MindHouse,Cult.fit,Wellness
+MindHouse,Headspace,Wellness
+MindHouse,Calm,Wellness
+MindHouse,SARVA,Wellness
+NSEIndia,BSE,Financial Exchange
+NSEIndia,MCX,Financial Exchange
+NSEIndia,NCDEX,Financial Exchange
+NSEIndia,India INX,Financial Exchange
+Nysaa,V-Mart,Value Retail
+Nysaa,Vishal Mega Mart,Value Retail
+Nysaa,Zudio,Value Retail
+Nysaa,City Kart,Value Retail
+Nysaa,Style Baazar,Value Retail
+OfBusiness,Moglix,B2B Commerce
+OfBusiness,Zetwerk,B2B Commerce
+OfBusiness,Infra.market,B2B Commerce
+OfBusiness,Metalbook,B2B Commerce
+Ondoor Concepts,BigBasket,Grocery Retail
+Ondoor Concepts,Blinkit,Grocery Retail
+Ondoor Concepts,Jiomart,Grocery Retail
+Ondoor Concepts,DMart Ready,Grocery Retail
+Orange Credit,MoneyTap,Digital Lending
+Orange Credit,KreditBee,Digital Lending
+Orange Credit,EarlySalary,Digital Lending
+Orange Credit,CASHe,Digital Lending
+Orbitt Space,Dhruva Space,SpaceTech
+Orbitt Space,Bellatrix Aerospace,SpaceTech
+Orbitt Space,Pixxel,SpaceTech
+Orbitt Space,SatSure,SpaceTech
+PB Fintech,InsuranceDekho,InsurTech
+PB Fintech,Coverfox,InsurTech
+PB Fintech,Turtlemint,InsurTech
+PB Fintech,Acko,InsurTech
+Pico Express,Porter,Logistics
+Pico Express,Lynk,Logistics
+Pico Express,Shadowfax,Logistics
+Pico Express,Loadshare,Logistics
+PlayShifu,Osmo,EdTech / AR Toys
+PlayShifu,Skillmatics,EdTech / AR Toys
+PlayShifu,Magic Crate,EdTech / AR Toys
+PlayShifu,Byju's Learning App,EdTech / AR Toys
+PostCard,Veeba,D2C Snacks
+PostCard,Urban Platter,D2C Snacks
+PostCard,iD Fresh Food,D2C Snacks
+PostCard,Slurrp Farm,D2C Snacks
+RainPlatform,KredX,Earned Wage Access
+RainPlatform,Vayana Network,Earned Wage Access
+RainPlatform,Refyne,Earned Wage Access
+RainPlatform,SalaryBox,Earned Wage Access
+Rooter,Loco,Game Streaming
+Rooter,Twitch,Game Streaming
+Rooter,YouTube Gaming,Game Streaming
+Rooter,Nimo TV,Game Streaming
+Sadhan,Aye Finance,Agri-FinTech
+Sadhan,Kinara Capital,Agri-FinTech
+Sadhan,Samunnati,Agri-FinTech
+Sadhan,Jai Kisan,Agri-FinTech
+SK Finance,Shriram Finance,Vehicle Finance
+SK Finance,Cholamandalam,Vehicle Finance
+SK Finance,Mahindra Finance,Vehicle Finance
+SK Finance,Bajaj Finance,Vehicle Finance
+Smaaash,Timezone,Arcade Entertainment
+Smaaash,Amoeba,Arcade Entertainment
+Smaaash,Fun City,Arcade Entertainment
+Smaaash,Funcity,Arcade Entertainment
+Stranger & Sons,Greater Than,Craft Spirits
+Stranger & Sons,Hapusa,Craft Spirits
+Stranger & Sons,Jaisalmer Gin,Craft Spirits
+Stranger & Sons,Terai Gin,Craft Spirits
+Suryoday SFB,Ujjivan,Banking
+Suryoday SFB,AU SFB,Banking
+Suryoday SFB,Equitas,Banking
+Suryoday SFB,Jana SFB,Banking
+Terra,Nazara Technologies,Educational Gaming
+Terra,Kuku FM,Educational Gaming
+Terra,Zupee,Educational Gaming
+Terra,Ludo King,Educational Gaming
+White Owl,Bira 91,Craft Beer
+White Owl,Simba,Craft Beer
+White Owl,Kingfisher,Craft Beer
+White Owl,BrewFellas,Craft Beer
+WorkIndia,Apna,HR Tech
+WorkIndia,QuikrJobs,HR Tech
+WorkIndia,BetterPlace,HR Tech
+WorkIndia,Rozgaar India,HR Tech
+Wysa,Woebot,Mental Health
+Wysa,Youper,Mental Health
+Wysa,Headspace,Mental Health
+Wysa,Calm App,Mental Health
+Zipsure,Digit Insurance,InsurTech
+Zipsure,Acko,InsurTech
+Zipsure,Go Digit,InsurTech
+Zipsure,Policybazaar,InsurTech
+Zouk,Baggit,D2C Lifestyle
+Zouk,Lavie,D2C Lifestyle
+Zouk,Caprese,D2C Lifestyle
+Zouk,DailyObjects,D2C Lifestyle
